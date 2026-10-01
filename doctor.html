@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang=""ko">
+<head>
+    <meta charset=""UTF-8">
+    <meta name=""viewport" content=""width=device-width, initial-scale="1.0">
+    <title>의료진 화면</title>
+    <link rel=""stylesheet" href=""style.css">
+</head>
+<body>
+
+    <div class=""screen">
+        <h1>의료진 화면</h1>
+        <p>버튼을 누르면 환자 화면에 수어 영상이 재생됩니다</p>
+    
+    <div id="buttons">
+        <button class="btn" onclick="send('혈압을 측정할게요')">혈압 측정</button>
+        <button class="btn" onclick="send('약을 처방해드릴게요')">약 처방</button>
+        <button class="btn" onclick="send('소금을 줄여야 해요')">소금 줄이기</button>
+        <button class="btn" onclick="send('운동이 필요해요')">운동</button>
+        <button class="btn" onclick="send('다음 주에 오세요')">다음 방문</button>
+        <button class="btn" onclick="send('검사가 필요해요')">검사</button>
+    </div>
+
+    <div id="patient-input" style=""margin-top: 40px;">
+        <p>환자 입력 내용:</p>
+        <div id="received" style="font-size: 1.5rem; font-weight: bold; color: #2b6cb0;">
+            대기 중...
+        </div>
+    </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

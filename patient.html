@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>환자 화면</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="screen">
+        <h1>환자 화면</h1>
+
+        
+        <div id="doctor-message" style="margin-bottom: 40px;">
+            <p>의료진 메시지:</p>
+            <div id="received" style="font-size: 1.5rem; font-weight: bold; color: #2b6cb0;">
+                대기 중...
+            </div>
+        </div>
+
+        <div id="camera-section">
+            <p>수어로 증상을 표현해주세요</p>
+            <video id="camera" autoplay playsinline
+                style="width: 320px; height: 240px; border-radius: 12px; background: #000;">
+            </video>
+            <div id="recognized" style="margin-top: 16px; font-size: 1.3rem; color: #c53030;">
+                인식 대기 중...
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
