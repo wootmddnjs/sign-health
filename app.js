@@ -1,34 +1,56 @@
-// 의료진 화면 → 환자 화면으로 메시지 전송
+// Firebase 초기화
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBtzt-_sU8254xSSJ29jnNNpRKZz3X5nMs",
+  authDomain: "sign-health.firebaseapp.com",
+  databaseURL: "https://sign-health-default-rtdb.firebaseio.com",
+  projectId: "sign-health",
+  storageBucket: "sign-health.firebasestorage.app",
+  messagingSenderId: "117629635026",
+  appId: "1:117629635026:web:9d0e632ae33bec361fa00b"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// 의료진 → 환자 메시지 전송
 function send(message) {
-    localStorage.setItem('doctor_message', message);
-    localStorage.setItem('doctor_time', Date.now());
-    document.getElementById('received') &&
-      (document.getElementById('received').innerText = '전송됨: ' + message);
+  set(ref(db, 'doctor_message'), {
+    text: message,
+    time: Date.now()
+  });
+  const el = document.getElementById('received');
+  if (el) el.innerText = '전송됨: ' + message;
 }
 
-// 환자 화면 → 의료진 화면으로 수어 인식 결과 전송
+// 환자 수어 인식 결과 전송
 function sendPatient(message) {
-    localStorage.setItem('patient_message', message);
-    localStorage.setItem('patient_time', Date.now());
+  set(ref(db, 'patient_message'), {
+    text: message,
+    time: Date.now()
+  });
 }
 
-// 실시간으로 상대방 메시지 감지
-window.addEventListener('storage', function(e) {
+// 의료진 화면 — 환자 메시지 수신
+const receivedEl = document.getElementById('received');
+if (receivedEl && document.title === '의료진 화면') {
+  onValue(ref(db, 'patient_message'), (snapshot) => {
+    const data = snapshot.val();
+    if (data) receivedEl.innerText = data.text;
+  });
+}
 
-    // 환자 화면에서 의료진 메시지 수신
-    if (e.key === 'doctor_message') {
-        const el = document.getElementById('received');
-        if (el) el.innerText = e.newValue;
-    }
+// 환자 화면 — 의료진 메시지 수신
+if (receivedEl && document.title === '환자 화면') {
+  onValue(ref(db, 'doctor_message'), (snapshot) => {
+    const data = snapshot.val();
+    if (data) receivedEl.innerText = data.text;
+  });
+}
 
-    // 의료진 화면에서 환자 메시지 수신
-    if (e.key === 'patient_message') {
-        const el = document.getElementById('received');
-        if (el) el.innerText = e.newValue;
-    }
-});
-
-// 카메라 + MediaPipe 연결
+// MediaPipe 카메라 연결
 const videoEl = document.getElementById('camera');
 
 if (videoEl) {
