@@ -64,45 +64,64 @@
       minTrackingConfidence: 0.5
     });
 
-    hands.onResults((results) => {
-      if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
-        el.innerText = '인식 대기 중...';
-        el.style.color = '#c53030';
-        return;
-      }
+    let gestureBuffer = [];
+const CONFIRM_FRAMES = 10;
 
-      const lm = results.multiHandLandmarks[0];
-      const fingers = {
-        index:  lm[8].y  < lm[6].y,
-        middle: lm[12].y < lm[10].y,
-        ring:   lm[16].y < lm[14].y,
-        pinky:  lm[20].y < lm[18].y
-      };
+hands.onResults((results) => {
+  if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
+    el.innerText = '인식 대기 중...';
+    el.style.color = '#c53030';
+    gestureBuffer = [];
+    return;
+  }
 
-      const allClosed = !fingers.index && !fingers.middle && !fingers.ring && !fingers.pinky;
-      const onlyIndex = fingers.index && !fingers.middle && !fingers.ring && !fingers.pinky;
-      const allOpen = fingers.index && fingers.middle && fingers.ring && fingers.pinky;
+  const lm = results.multiHandLandmarks[0];
+  const fingers = {
+    index:  lm[8].y  < lm[6].y,
+    middle: lm[12].y < lm[10].y,
+    ring:   lm[16].y < lm[14].y,
+    pinky:  lm[20].y < lm[18].y
+  };
 
-      const handY = lm[0].y;
-      const atFace  = handY < 0.4;
-      const atChest = handY >= 0.4 && handY < 0.7;
+  const allClosed = !fingers.index && !fingers.middle && !fingers.ring && !fingers.pinky;
+  const onlyIndex = fingers.index && !fingers.middle && !fingers.ring && !fingers.pinky;
+  const allOpen = fingers.index && fingers.middle && fingers.ring && fingers.pinky;
 
-      let gesture = '';
-      if (allClosed && atChest) gesture = '아프다';
-      else if (allClosed && atFace) gesture = '어지럽다';
-      else if (onlyIndex && atFace) gesture = '두통';
-      else if (allOpen && atChest) gesture = '약';
-      else if (allOpen) gesture = '피곤';
+  const handY = lm[0].y;
+  const atFace  = handY < 0.35;
+  const atChest = handY >= 0.45 && handY < 0.75;
 
-      if (gesture) {
-        el.innerText = gesture + ' 인식됨';
-        el.style.color = '#2b6cb0';
-        db.ref('patient_message').set({ text: gesture, time: Date.now() });
-      } else {
-        el.innerText = '손 인식됨 ✋';
-        el.style.color = '#2b6cb0';
-      }
-    });
+  let gesture = '';
+  if (allClosed && atChest) gesture = '아프다';
+  else if (allClosed && atFace) gesture = '어지럽다';
+  else if (onlyIndex && atFace) gesture = '두통';
+  else if (allOpen && atChest) gesture = '약';
+  else if (allOpen) gesture = '피곤';
+
+  if (gesture) {
+    el.innerText = gesture + ' 감지 중...';
+    el.style.color = '#718096';
+    gestureBuffer.push(gesture);
+
+    if (gestureBuffer.length > CONFIRM_FRAMES) {
+      gestureBuffer.shift();
+    }
+
+    const allSame = gestureBuffer.length === CONFIRM_FRAMES &&
+      gestureBuffer.every(g => g === gestureBuffer[0]);
+
+    if (allSame) {
+      el.innerText = gesture + ' 인식됨 ✅';
+      el.style.color = '#2b6cb0';
+      db.ref('patient_message').set({ text: gesture, time: Date.now() });
+      gestureBuffer = [];
+    }
+  } else {
+    el.innerText = '손 인식됨 ✋';
+    el.style.color = '#2b6cb0';
+    gestureBuffer = [];
+  }
+});
 
     navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
       videoEl.srcObject = stream;
