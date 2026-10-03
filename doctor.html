@@ -1,67 +1,68 @@
 <!DOCTYPE html>
-<html lang=""ko">
+<html lang="ko">
 <head>
-    <meta charset=""UTF-8">
-    <meta name=""viewport" content=""width=device-width, initial-scale="1.0">
-    <title>의료진 화면</title>
-    <link rel=""stylesheet" href=""style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>의료진 화면</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div class=""screen">
-        <h1>의료진 화면</h1>
-        <p>버튼을 누르면 환자 화면에 수어 영상이 재생됩니다</p>
-    
+  <div class="screen">
+    <h1>의료진 화면</h1>
+    <p>버튼을 누르면 환자 화면에 수어 영상이 재생됩니다</p>
+
     <div id="buttons">
-       <button class="btn" data-msg="혈압을 측정할게요">혈압 측정</button>
-       <button class="btn" data-msg="약을 처방해드릴게요">약 처방</button>
-       <button class="btn" data-msg="소금을 줄여야 해요">소금 줄이기</button>
-       <button class="btn" data-msg="운동이 필요해요">운동</button>
-       <button class="btn" data-msg="다음 주에 오세요">다음 방문</button>
-       <button class="btn" data-msg="검사가 필요해요">검사</button> 
+      <button class="btn" data-msg="혈압을 측정할게요">혈압 측정</button>
+      <button class="btn" data-msg="약을 처방해드릴게요">약 처방</button>
+      <button class="btn" data-msg="소금을 줄여야 해요">소금 줄이기</button>
+      <button class="btn" data-msg="운동이 필요해요">운동</button>
+      <button class="btn" data-msg="다음 주에 오세요">다음 방문</button>
+      <button class="btn" data-msg="검사가 필요해요">검사</button>
     </div>
 
-    <div id="patient-input" style=""margin-top: 40px;">
-        <p>환자 입력 내용:</p>
-        <div id="received" style="font-size: 1.5rem; font-weight: bold; color: #2b6cb0;">
-            대기 중...
-        </div>
+    <div id="patient-input" style="margin-top: 40px;">
+      <p>환자 입력 내용:</p>
+      <div id="received" style="font-size: 1.5rem; font-weight: bold; color: #2b6cb0;">
+        대기 중...
+      </div>
     </div>
-</div>
+  </div>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-  import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBtzt-_sU8254xSSJ29jnNNpRKZz3X5nMs",
-    authDomain: "sign-health.firebaseapp.com",
-    databaseURL: "https://sign-health-default-rtdb.firebaseio.com",
-    projectId: "sign-health",
-    storageBucket: "sign-health.firebasestorage.app",
-    messagingSenderId: "117629635026",
-    appId: "1:117629635026:web:9d0e632ae33bec361fa00b"
-  };
+    const firebaseConfig = {
+      apiKey: "AIzaSyBtzt-_sU8254xSSJ29jnNNpRKZz3X5nMs",
+      authDomain: "sign-health.firebaseapp.com",
+      databaseURL: "https://sign-health-default-rtdb.firebaseio.com",
+      projectId: "sign-health",
+      storageBucket: "sign-health.firebasestorage.app",
+      messagingSenderId: "117629635026",
+      appId: "1:117629635026:web:9d0e632ae33bec361fa00b"
+    };
 
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-  function send(message) {
-    set(ref(db, 'doctor_message'), {
-      text: message,
-      time: Date.now()
+    function send(message) {
+      set(ref(db, 'doctor_message'), {
+        text: message,
+        time: Date.now()
+      });
+      document.getElementById('received').innerText = '전송됨: ' + message;
+    }
+
+    onValue(ref(db, 'patient_message'), (snapshot) => {
+      const data = snapshot.val();
+      if (data) document.getElementById('received').innerText = data.text;
     });
-    document.getElementById('received').innerText = '전송됨: ' + message;
-  }
 
-  onValue(ref(db, 'patient_message'), (snapshot) => {
-    const data = snapshot.val();
-    if (data) document.getElementById('received').innerText = data.text;
-  });
+    document.querySelectorAll('[data-msg]').forEach(btn => {
+      btn.addEventListener('click', () => send(btn.dataset.msg));
+    });
+  </script>
 
-  document.querySelectorAll('[data-msg]').forEach(btn => {
-    btn.addEventListener('click', () => send(btn.dataset.msg));
-  });
-</script>
 </body>
 </html>
