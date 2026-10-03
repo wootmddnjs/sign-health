@@ -49,13 +49,11 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // 의료진 메시지 수신
     onValue(ref(db, 'doctor_message'), (snapshot) => {
       const data = snapshot.val();
       if (data) document.getElementById('received').innerText = data.text;
     });
 
-    // MediaPipe 카메라 연결
     const videoEl = document.getElementById('camera');
 
     const hands = new Hands({
@@ -79,64 +77,58 @@
         return;
       }
 
-    const lm = results.landmarks[0];
+      const lm = results.landmarks[0];
 
-    // 손가락 펴짐 여부 확인
-    const fingers = {
-        index: lm[8].y < lm[6].y,  // 검지
-        middle: lm[12].y < lm[10].y,  // 중지
-        ring: lm[16].y < lm[14].y,  // 약지
-        pinky: lm[20].y < lm[18].y,  // 소지
-        thumb: lm[4].x < lm[3].x  // 엄지
-    };
+      const fingers = {
+        index:  lm[8].y  < lm[6].y,
+        middle: lm[12].y < lm[10].y,
+        ring:   lm[16].y < lm[14].y,
+        pinky:  lm[20].y < lm[18].y,
+        thumb:  lm[4].x  < lm[3].x
+      };
 
-    const allClosed = !fingers.index && !fingers.middle && !fingers.ring && !fingers.pinky;
-    const onlyIndex = fingers.index && !fingers.middle && !fingers.ring && !fingers.pinky;
-    const allOpen = fingers.index && fingers.middle && fingers.ring && fingers.pinky;
+      const allClosed = !fingers.index && !fingers.middle && !fingers.ring && !fingers.pinky;
+      const onlyIndex = fingers.index && !fingers.middle && !fingers.ring && !fingers.pinky;
+      const allOpen = fingers.index && fingers.middle && fingers.ring && fingers.pinky;
 
-    // 손 위치
-    const handY = lm[0].y; // 0=상단, 1=하단
-    const handX = lm[0].x;
-    const atFace = handY < 0.4;     // 얼굴 높이
-    const atChset = handY > 0.4 && handY < 0.7; // 가슴 높이
+      const handY = lm[0].y;
+      const atFace  = handY < 0.4;
+      const atChest = handY > 0.4 && handY < 0.7;
 
-    let gesture = '';
+      let gesture = '';
 
-    // 아프다: 손가락 느슨하게 오므림, 가슴 높이
-    if (allClosed && atChset) {
+      if (allClosed && atChest) {
         gesture = '아프다';
-    }
-    // 어지럽다: 주먹, 얼굴 높이
-    else if (allClosed && atFace) {
+      } else if (allClosed && atFace) {
         gesture = '어지럽다';
-    }
-    // 두통: 검지만 펴고 얼굴 높이
-    else if (onlyIndex && atFace) {
+      } else if (onlyIndex && atFace) {
         gesture = '두통';
-    }
-    // 약: 모든 손가락 펴고 가슴 높이
-    else if (allOpen && atChset) {
+      } else if (allOpen && atChest) {
         gesture = '약';
-    }
-    // 피곤: 모든 손가락 펴고 양손
-    else if (allOpen && results.landmarks.length > 0) {
+      } else if (allOpen && results.landmarks.length > 1) {
         gesture = '피곤';
-    }
+      }
 
-    if (gesture) {
+      if (gesture) {
         el.innerText = gesture + ' 인식됨';
         el.style.color = '#2b6cb0';
-        // 의료진에게 전송
         set(ref(db, 'patient_message'), {
-            text: gesture,
-            time: Date.now()
+          text: gesture,
+          time: Date.now()
         });
-    } else {
+      } else {
         el.innerText = '손 인식됨 ✋';
         el.style.color = '#2b6cb0';
-    }
- });
+      }
+    });
 
+    const camera = new Camera(videoEl, {
+      onFrame: async () => {
+        await hands.send({ image: videoEl });
+      },
+      width: 320,
+      height: 240
+    });
 
     camera.start();
   </script>
