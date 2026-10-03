@@ -7,30 +7,27 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
   <div class="screen">
     <h1>환자 화면</h1>
-
-    <div id="doctor-message" style="margin-bottom: 40px;">
+    <div id="doctor-message" style="margin-bottom:40px;">
       <p>의료진 메시지:</p>
-      <div id="received" style="font-size: 1.5rem; font-weight: bold; color: #2b6cb0;">
+      <div id="received" style="font-size:1.5rem;font-weight:bold;color:#2b6cb0;">
         대기 중...
       </div>
     </div>
-
     <div id="camera-section">
       <p>수어로 증상을 표현해주세요</p>
       <video id="camera" autoplay playsinline
-        style="width: 320px; height: 240px; border-radius: 12px; background: #000;">
+        style="width:320px;height:240px;border-radius:12px;background:#000;">
       </video>
-      <div id="recognized" style="margin-top: 16px; font-size: 1.3rem; color: #c53030;">
+      <div id="recognized" style="margin-top:16px;font-size:1.3rem;color:#c53030;">
         인식 대기 중...
       </div>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"
+    crossorigin="anonymous"></script>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
@@ -55,11 +52,11 @@
     });
 
     const videoEl = document.getElementById('camera');
+    const el = document.getElementById('recognized');
 
     const hands = new Hands({
-      locateFile: (file) => {
-        return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
-      }
+      locateFile: (file) =>
+        `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
     });
 
     hands.setOptions({
@@ -70,21 +67,18 @@
     });
 
     hands.onResults((results) => {
-      const el = document.getElementById('recognized');
-      if (!results.landmarks || results.landmarks.length === 0) {
+      if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
         el.innerText = '인식 대기 중...';
         el.style.color = '#c53030';
         return;
       }
 
-      const lm = results.landmarks[0];
-
+      const lm = results.multiHandLandmarks[0];
       const fingers = {
         index:  lm[8].y  < lm[6].y,
         middle: lm[12].y < lm[10].y,
         ring:   lm[16].y < lm[14].y,
-        pinky:  lm[20].y < lm[18].y,
-        thumb:  lm[4].x  < lm[3].x
+        pinky:  lm[20].y < lm[18].y
       };
 
       const allClosed = !fingers.index && !fingers.middle && !fingers.ring && !fingers.pinky;
@@ -93,29 +87,19 @@
 
       const handY = lm[0].y;
       const atFace  = handY < 0.4;
-      const atChest = handY > 0.4 && handY < 0.7;
+      const atChest = handY >= 0.4 && handY < 0.7;
 
       let gesture = '';
-
-      if (allClosed && atChest) {
-        gesture = '아프다';
-      } else if (allClosed && atFace) {
-        gesture = '어지럽다';
-      } else if (onlyIndex && atFace) {
-        gesture = '두통';
-      } else if (allOpen && atChest) {
-        gesture = '약';
-      } else if (allOpen && results.landmarks.length > 1) {
-        gesture = '피곤';
-      }
+      if (allClosed && atChest) gesture = '아프다';
+      else if (allClosed && atFace) gesture = '어지럽다';
+      else if (onlyIndex && atFace) gesture = '두통';
+      else if (allOpen && atChest) gesture = '약';
+      else if (allOpen) gesture = '피곤';
 
       if (gesture) {
         el.innerText = gesture + ' 인식됨';
         el.style.color = '#2b6cb0';
-        set(ref(db, 'patient_message'), {
-          text: gesture,
-          time: Date.now()
-        });
+        set(ref(db, 'patient_message'), { text: gesture, time: Date.now() });
       } else {
         el.innerText = '손 인식됨 ✋';
         el.style.color = '#2b6cb0';
@@ -123,21 +107,18 @@
     });
 
     navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
-  videoEl.srcObject = stream;
-  videoEl.play();
-
-  const sendFrame = async () => {
-    await hands.send({ image: videoEl });
-    requestAnimationFrame(sendFrame);
-  };
-
-  videoEl.onloadeddata = () => {
-    sendFrame();
-  };
-});
-
+      videoEl.srcObject = stream;
+      videoEl.play();
+      videoEl.onloadeddata = async () => {
+        const loop = async () => {
+          await hands.send({ image: videoEl });
+          requestAnimationFrame(loop);
+        };
+        loop();
+      };
+    }).catch((err) => {
+      el.innerText = '카메라 오류: ' + err.message;
+    });
   </script>
-
 </body>
 </html>
-
