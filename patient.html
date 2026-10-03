@@ -122,15 +122,20 @@
       }
     });
 
-    const camera = new Camera(videoEl, {
-      onFrame: async () => {
-        await hands.send({ image: videoEl });
-      },
-      width: 320,
-      height: 240
-    });
+    navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+  videoEl.srcObject = stream;
+  videoEl.play();
 
-    camera.start();
+  const sendFrame = async () => {
+    await hands.send({ image: videoEl });
+    requestAnimationFrame(sendFrame);
+  };
+
+  videoEl.onloadeddata = () => {
+    sendFrame();
+  };
+});
+
   </script>
 
 </body>
