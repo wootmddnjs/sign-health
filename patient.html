@@ -1,37 +1,99 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>환자 화면</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>환자 화면</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div class="screen">
-        <h1>환자 화면</h1>
+  <div class="screen">
+    <h1>환자 화면</h1>
 
-        
-        <div id="doctor-message" style="margin-bottom: 40px;">
-            <p>의료진 메시지:</p>
-            <div id="received" style="font-size: 1.5rem; font-weight: bold; color: #2b6cb0;">
-                대기 중...
-            </div>
-        </div>
-
-        <div id="camera-section">
-            <p>수어로 증상을 표현해주세요</p>
-            <video id="camera" autoplay playsinline
-                style="width: 320px; height: 240px; border-radius: 12px; background: #000;">
-            </video>
-            <div id="recognized" style="margin-top: 16px; font-size: 1.3rem; color: #c53030;">
-                인식 대기 중...
-            </div>
-        </div>
+    <div id="doctor-message" style="margin-bottom: 40px;">
+      <p>의료진 메시지:</p>
+      <div id="received" style="font-size: 1.5rem; font-weight: bold; color: #2b6cb0;">
+        대기 중...
+      </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-    <script type="module" src="app.js"></script>
+    <div id="camera-section">
+      <p>수어로 증상을 표현해주세요</p>
+      <video id="camera" autoplay playsinline
+        style="width: 320px; height: 240px; border-radius: 12px; background: #000;">
+      </video>
+      <div id="recognized" style="margin-top: 16px; font-size: 1.3rem; color: #c53030;">
+        인식 대기 중...
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBtzt-_sU8254xSSJ29jnNNpRKZz3X5nMs",
+      authDomain: "sign-health.firebaseapp.com",
+      databaseURL: "https://sign-health-default-rtdb.firebaseio.com",
+      projectId: "sign-health",
+      storageBucket: "sign-health.firebasestorage.app",
+      messagingSenderId: "117629635026",
+      appId: "1:117629635026:web:9d0e632ae33bec361fa00b"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // 의료진 메시지 수신
+    onValue(ref(db, 'doctor_message'), (snapshot) => {
+      const data = snapshot.val();
+      if (data) document.getElementById('received').innerText = data.text;
+    });
+
+    // MediaPipe 카메라 연결
+    const videoEl = document.getElementById('camera');
+
+    const hands = new Hands({
+      locateFile: (file) => {
+        return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+      }
+    });
+
+    hands.setOptions({
+      maxNumHands: 1,
+      modelComplexity: 1,
+      minDetectionConfidence: 0.7,
+      minTrackingConfidence: 0.5
+    });
+
+    hands.onResults((results) => {
+      const el = document.getElementById('recognized');
+      if (results.landmarks && results.landmarks.length > 0) {
+        el.innerText = '손 인식됨 ✋';
+        el.style.color = '#2b6cb0';
+        // 나중에 여기서 수어 패턴 인식 추가
+      } else {
+        el.innerText = '인식 대기 중...';
+        el.style.color = '#c53030';
+      }
+    });
+
+    const camera = new Camera(videoEl, {
+      onFrame: async () => {
+        await hands.send({ image: videoEl });
+      },
+      width: 320,
+      height: 240
+    });
+
+    camera.start();
+  </script>
+
 </body>
 </html>
+
