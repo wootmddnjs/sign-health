@@ -98,13 +98,13 @@
         pinky:  lm[20].y < lm[18].y
       };
 
-      const allClosed = !fingers.index && !fingers.middle && !fingers.ring && !fingers.pinky;
+      const allClosed = !fingers.index && !fingers.middle;
       const onlyIndex = fingers.index && !fingers.middle && !fingers.ring && !fingers.pinky;
       const allOpen = fingers.index && fingers.middle && fingers.ring && fingers.pinky;
 
       const handY = lm[0].y;
       const atFace  = handY < 0.35;
-      const atChest = handY >= 0.45 && handY < 0.85;
+      const atChest = handY >= 0.45 && handY < 0.95;
 
       console.log('Y:', handY.toFixed(2), '손가락:', JSON.stringify(fingers));
 
