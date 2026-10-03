@@ -110,13 +110,15 @@
       const allOpen = fingers.index && fingers.middle && fingers.ring && fingers.pinky;
 
       const handY = lm[0].y;
+      // 손바닥 방향 감지 (엄지 위치로 판단)
+      const palmup = lm[4].y > lm[17].y; // 엄지가 소지보다 아래 = 손바닥 위
       const atFace  = handY < 0.35;
       const atChest = handY >= 0.45 && handY < 0.95;
 
       console.log('Y:', handY.toFixed(2), '손가락:', JSON.stringify(fingers));
 
       let gesture = '';
-      if (allClosed && atChest) gesture = '아프다';
+      if (palmup && atChest) gesture = '아프다';
       else if (allClosed && atFace) gesture = '어지럽다';
       else if (onlyIndex && atFace) gesture = '두통';
       else if (allOpen && atChest) gesture = '약';
