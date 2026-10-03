@@ -73,23 +73,70 @@
 
     hands.onResults((results) => {
       const el = document.getElementById('recognized');
-      if (results.landmarks && results.landmarks.length > 0) {
-        el.innerText = '손 인식됨 ✋';
-        el.style.color = '#2b6cb0';
-        // 나중에 여기서 수어 패턴 인식 추가
-      } else {
+      if (!results.landmarks || results.landmarks.length === 0) {
         el.innerText = '인식 대기 중...';
         el.style.color = '#c53030';
+        return;
       }
-    });
 
-    const camera = new Camera(videoEl, {
-      onFrame: async () => {
-        await hands.send({ image: videoEl });
-      },
-      width: 320,
-      height: 240
-    });
+    const lm = results.landmarks[0];
+
+    // 손가락 펴짐 여부 확인
+    const fingers = {
+        index: lm[8].y < lm[6].y,  // 검지
+        middle: lm[12].y < lm[10].y,  // 중지
+        ring: lm[16].y < lm[14].y,  // 약지
+        pinky: lm[20].y < lm[18].y,  // 소지
+        thumb: lm[4].x < lm[3].x  // 엄지
+    };
+
+    const allClosed = !fingers.index && !fingers.middle && !fingers.ring && !fingers.pinky;
+    const onlyIndex = fingers.index && !fingers.middle && !fingers.ring && !fingers.pinky;
+    const allOpen = fingers.index && fingers.middle && fingers.ring && fingers.pinky;
+
+    // 손 위치
+    const handY = lm[0].y; // 0=상단, 1=하단
+    const handX = lm[0].x;
+    const atFace = handY < 0.4;     // 얼굴 높이
+    const atChset = handY > 0.4 && handY < 0.7; // 가슴 높이
+
+    let gesture = '';
+
+    // 아프다: 손가락 느슨하게 오므림, 가슴 높이
+    if (allClosed && atChset) {
+        gesture = '아프다';
+    }
+    // 어지럽다: 주먹, 얼굴 높이
+    else if (allClosed && atFace) {
+        gesture = '어지럽다';
+    }
+    // 두통: 검지만 펴고 얼굴 높이
+    else if (onlyIndex && atFace) {
+        gesture = '두통';
+    }
+    // 약: 모든 손가락 펴고 가슴 높이
+    else if (allOpen && atChset) {
+        gesture = '약';
+    }
+    // 피곤: 모든 손가락 펴고 양손
+    else if (allOpen && results.landmarks.length > 0) {
+        gesture = '피곤';
+    }
+
+    if (gesture) {
+        el.innerText = gesture + ' 인식됨';
+        el.style.color = '#2b6cb0';
+        // 의료진에게 전송
+        set(ref(db, 'patient_message'), {
+            text: gesture,
+            time: Date.now()
+        });
+    } else {
+        el.innerText = '손 인식됨 ✋';
+        el.style.color = '#2b6cb0';
+    }
+ });
+
 
     camera.start();
   </script>
