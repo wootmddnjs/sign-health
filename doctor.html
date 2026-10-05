@@ -95,7 +95,7 @@
     .main {
       flex: 1;
       display: grid;
-      grid-template-columns: 268px 1fr;
+      grid-template-columns: 380px 1fr;
       min-height: 0;
     }
 
@@ -250,8 +250,6 @@
     <div class="nav-divider"></div>
     <div class="role-badge">
       <span class="role-tag">의사</span>
-      <span class="dept-tag">고혈압 외래</span>
-      <span class="comm-tag">수어 소통</span>
     </div>
   </div>
   <div class="topnav-right">
@@ -272,7 +270,10 @@
       <div class="patient-profile">
         <div class="patient-avatar">김</div>
         <div>
-          <div class="patient-name">김○○</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="patient-name">김○○</div>
+            <span class="dept-tag">고혈압 외래</span>
+          </div>
           <div class="patient-meta">67세 · 여 · 청각장애 2급</div>
         </div>
       </div>
@@ -291,6 +292,10 @@
       <div class="info-row">
         <span class="info-key">담당간호사</span>
         <span class="info-val">박○○ RN</span>
+      </div>
+      <div class="info-row">
+        <span class="info-key">의사소통</span>
+        <span class="info-val" style="color:#b45309;font-weight:700;background:#fef3c7;padding:1px 8px;border-radius:4px;border:1px solid #fcd34d;">수어 (Sign Health)</span>
       </div>
     </div>
 
