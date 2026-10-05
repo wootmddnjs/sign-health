@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>의료진 화면</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f4f5f7;
+      --surface: #ffffff;
+      --surface2: #f9fafb;
+      --border: #e0e3ea;
+      --fg: #111827;
+      --fg2: #374151;
+      --fg3: #6b7280;
+      --fg4: #9ca3af;
+      --accent: #1d4ed8;
+      --accent-bg: #eff6ff;
+      --accent-border: #bfdbfe;
+      --green: #15803d;
+      --green-bg: #f0fdf4;
+      --green-border: #bbf7d0;
+      --red: #b91c1c;
+      --red-bg: #fef2f2;
+      --statusbar: #1e2537;
+      --statusbar-fg: #c9d0e0;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      font-size: 14px;
+      overflow: hidden;
+    }
+
+    /* Top nav */
+    .topnav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .topnav-left { display: flex; align-items: center; gap: 16px; }
+    .app-name { font-size: 15px; font-weight: 700; color: var(--fg); letter-spacing: -0.02em; }
+    .app-name span { color: var(--accent); }
+    .nav-divider { width: 1px; height: 18px; background: var(--border); }
+    .role-badge { display: flex; align-items: center; gap: 8px; }
+    .role-tag {
+      background: var(--accent); color: white;
+      font-size: 11px; font-weight: 700;
+      padding: 3px 9px; border-radius: 4px; letter-spacing: 0.04em;
+    }
+    .dept-tag {
+      background: var(--accent-bg); border: 1px solid var(--accent-border);
+      color: var(--accent); font-size: 11px; font-weight: 600;
+      padding: 2px 8px; border-radius: 4px;
+    }
+    .topnav-right { display: flex; align-items: center; gap: 8px; }
+    .nav-btn {
+      background: none; border: 1px solid var(--border); color: var(--fg3);
+      font-size: 12px; font-weight: 500; padding: 6px 12px; border-radius: 6px;
+      cursor: pointer; font-family: inherit;
+    }
+    .nav-btn:hover { background: var(--bg); }
+    .voice-btn {
+      display: flex; align-items: center; gap: 6px;
+      background: none; border: 1px solid var(--border); color: var(--fg3);
+      font-size: 12px; font-weight: 500; padding: 6px 12px; border-radius: 6px;
+      cursor: pointer; font-family: inherit; transition: all 0.15s;
+    }
+    .voice-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+    .voice-btn.listening {
+      border-color: #dc2626; color: #dc2626; background: #fef2f2;
+      animation: pulse-border 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse-border { 0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,0.2)} 50%{box-shadow:0 0 0 4px rgba(220,38,38,0)} }
+    .voice-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+    /* Layout */
+    .main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 268px 1fr;
+      min-height: 0;
+    }
+
+    /* Left chart panel */
+    .chart-panel {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow-y: auto;
+    }
+    .panel-section { padding: 18px 20px; border-bottom: 1px solid var(--border); }
+    .panel-section:last-child { border-bottom: none; }
+    .panel-label {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--fg4); margin-bottom: 10px;
+    }
+    .patient-profile { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .patient-avatar {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: var(--bg); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: var(--fg3); flex-shrink: 0;
+    }
+    .patient-name { font-size: 15px; font-weight: 700; color: var(--fg); letter-spacing: -0.02em; }
+    .patient-meta { font-size: 11px; color: var(--fg3); margin-top: 2px; }
+    .info-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 0; border-bottom: 1px solid var(--border);
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-key { font-size: 11px; color: var(--fg3); font-weight: 500; }
+    .info-val { font-size: 12px; font-weight: 600; color: var(--fg); }
+    .info-val.red { color: var(--red); }
+    .bp-reading {
+      background: var(--red-bg); border: 1px solid #fecaca;
+      border-radius: 6px; padding: 10px 14px; margin-top: 8px;
+    }
+    .bp-value { font-size: 22px; font-weight: 700; color: var(--red); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+    .bp-label { font-size: 10px; color: var(--red); font-weight: 500; margin-top: 2px; letter-spacing: 0.04em; text-transform: uppercase; }
+    .diagnosis-chip {
+      display: inline-block; background: var(--red-bg); border: 1px solid #fecaca;
+      color: var(--red); font-size: 11px; font-weight: 600;
+      padding: 3px 8px; border-radius: 4px; margin: 2px 2px 2px 0;
+    }
+    .med-item {
+      font-size: 12px; color: var(--fg2); padding: 5px 0;
+      border-bottom: 1px dashed var(--border); display: flex; justify-content: space-between;
+    }
+    .med-item:last-child { border-bottom: none; }
+    .med-dose { font-size: 11px; color: var(--fg4); }
+    .log-row {
+      display: flex; gap: 8px; padding: 5px 0;
+      border-bottom: 1px solid var(--border); align-items: flex-start;
+    }
+    .log-row:last-child { border-bottom: none; }
+    .log-time { font-size: 10px; color: var(--fg4); font-variant-numeric: tabular-nums; flex-shrink: 0; padding-top: 1px; }
+    .log-text { font-size: 11px; color: var(--fg2); line-height: 1.4; flex: 1; }
+    .log-tag { font-size: 10px; font-weight: 600; padding: 1px 5px; border-radius: 3px; flex-shrink: 0; }
+    .log-tag.sign { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+    .log-tag.doctor { background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent-border); }
+
+    /* Right send panel */
+    .send-panel {
+      padding: 20px 24px;
+      overflow-y: auto;
+      display: flex; flex-direction: column; gap: 20px;
+      min-height: 0;
+    }
+
+    /* Patient message received */
+    .patient-msg-box {
+      background: var(--green-bg); border: 1px solid var(--green-border);
+      border-radius: 6px; padding: 12px 16px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .patient-msg-main { flex: 1; }
+    .patient-msg-label { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--green); margin-bottom: 4px; }
+    .patient-msg-text { font-size: 22px; font-weight: 700; color: var(--green); letter-spacing: -0.02em; }
+    .patient-msg-time { font-size: 10px; color: #16a34a; margin-top: 4px; font-variant-numeric: tabular-nums; }
+    .patient-msg-badge {
+      background: var(--green); color: white; font-size: 10px; font-weight: 700;
+      padding: 4px 8px; border-radius: 4px; letter-spacing: 0.04em;
+    }
+
+    /* Section header */
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .section-title { font-size: 13px; font-weight: 700; color: var(--fg); letter-spacing: -0.01em; }
+    .section-sub { font-size: 11px; color: var(--fg4); }
+
+    /* Command grid */
+    .cmd-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .cmd-btn {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 13px 12px; cursor: pointer; text-align: left;
+      transition: border-color 0.1s, background 0.1s; font-family: inherit; width: 100%;
+    }
+    .cmd-btn:hover { border-color: var(--accent); background: var(--accent-bg); }
+    .cmd-btn.active {
+      border-color: var(--accent); background: var(--accent-bg);
+      box-shadow: 0 0 0 3px rgba(29,78,216,0.08);
+    }
+    .cmd-btn-label { font-size: 13px; font-weight: 700; color: var(--fg); letter-spacing: -0.02em; margin-bottom: 3px; }
+    .cmd-btn.active .cmd-btn-label { color: var(--accent); }
+    .cmd-btn-sub { font-size: 10px; color: var(--fg3); line-height: 1.4; }
+
+    /* Voice status */
+    .voice-status {
+      display: none; align-items: center; gap: 8px;
+      padding: 8px 12px; background: #fef2f2; border: 1px solid #fecaca;
+      border-radius: 6px; font-size: 12px; color: #dc2626; font-weight: 500;
+    }
+    .voice-status.active { display: flex; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* Sent log */
+    .sent-log { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .sent-log-header {
+      padding: 8px 14px; background: var(--surface2); border-bottom: 1px solid var(--border);
+      font-size: 10px; font-weight: 600; color: var(--fg3); letter-spacing: 0.06em; text-transform: uppercase;
+    }
+    .sent-log-row {
+      padding: 9px 14px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .sent-log-row:last-child { border-bottom: none; }
+    .sent-log-cat {
+      font-size: 10px; font-weight: 600; padding: 1px 5px; border-radius: 3px; flex-shrink: 0;
+      background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent-border);
+    }
+    .sent-log-text { font-size: 12px; font-weight: 500; color: var(--fg2); flex: 1; }
+    .sent-log-time { font-size: 11px; color: var(--fg4); font-variant-numeric: tabular-nums; }
+
+    /* Status bar */
+    .statusbar {
+      background: var(--statusbar); color: var(--statusbar-fg);
+      height: 28px; display: flex; align-items: center;
+      padding: 0 16px; gap: 20px; flex-shrink: 0;
+      font-size: 11px; font-variant-numeric: tabular-nums;
+    }
+    .statusbar-item { display: flex; align-items: center; gap: 6px; }
+    .status-dot-sm { width: 5px; height: 5px; border-radius: 50%; background: #6b7280; }
+    .status-dot-sm.connected { background: #22c55e; }
+    .statusbar-divider { width: 1px; height: 12px; background: rgba(255,255,255,0.15); }
+    .statusbar-spacer { flex: 1; }
+  </style>
+</head>
+<body>
+
+<div class="topnav">
+  <div class="topnav-left">
+    <div class="app-name">Sign<span>Health</span></div>
+    <div class="nav-divider"></div>
+    <div class="role-badge">
+      <span class="role-tag">의사</span>
+      <span class="dept-tag">고혈압 외래</span>
+    </div>
+  </div>
+  <div class="topnav-right">
+    <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()">
+      <div class="voice-dot"></div>
+      음성 인식
+    </button>
+    <button class="nav-btn">로그아웃</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- Left: Patient chart -->
+  <div class="chart-panel">
+    <div class="panel-section">
+      <div class="panel-label">현재 환자</div>
+      <div class="patient-profile">
+        <div class="patient-avatar">김</div>
+        <div>
+          <div class="patient-name">김○○</div>
+          <div class="patient-meta">67세 · 여 · 청각장애 2급</div>
+        </div>
+      </div>
+      <div class="info-row">
+        <span class="info-key">등록번호</span>
+        <span class="info-val">2024-03847</span>
+      </div>
+      <div class="info-row">
+        <span class="info-key">진료과</span>
+        <span class="info-val">순환기내과</span>
+      </div>
+      <div class="info-row">
+        <span class="info-key">담당의</span>
+        <span class="info-val">이○○ 교수</span>
+      </div>
+      <div class="info-row">
+        <span class="info-key">담당간호사</span>
+        <span class="info-val">박○○ RN</span>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-label">최근 혈압</div>
+      <div class="bp-reading">
+        <div class="bp-value">158 / 96</div>
+        <div class="bp-label">mmHg · 오늘 11:42 측정</div>
+      </div>
+      <div class="info-row" style="margin-top:10px;">
+        <span class="info-key">지난 방문</span>
+        <span class="info-val red">162 / 98</span>
+      </div>
+      <div class="info-row">
+        <span class="info-key">목표 혈압</span>
+        <span class="info-val">130 / 80 미만</span>
+      </div>
+      <div class="info-row">
+        <span class="info-key">맥박</span>
+        <span class="info-val">78 bpm</span>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-label">진단명</div>
+      <div>
+        <span class="diagnosis-chip">본태성 고혈압 I10</span>
+        <span class="diagnosis-chip">만성신장질환 N18</span>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-label">현재 처방약</div>
+      <div class="med-item"><span>암로디핀 5mg</span><span class="med-dose">1T qd</span></div>
+      <div class="med-item"><span>로사르탄 50mg</span><span class="med-dose">1T qd</span></div>
+      <div class="med-item"><span>히드로클로로치아지드 12.5mg</span><span class="med-dose">1T qd</span></div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-label">진료 기록</div>
+      <div class="log-row" id="logFirst">
+        <span class="log-time">—</span>
+        <span class="log-tag doctor">진료</span>
+        <span class="log-text">대기 중</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Send panel -->
+  <div class="send-panel">
+
+    <!-- Patient message received -->
+    <div>
+      <div class="section-header">
+        <span class="section-title">환자 수신 메시지</span>
+        <span class="section-sub">수어 인식 · Firebase 실시간</span>
+      </div>
+      <div class="patient-msg-box">
+        <div class="patient-msg-main">
+          <div class="patient-msg-label">수어 인식 결과</div>
+          <div class="patient-msg-text" id="receivedText">대기 중...</div>
+          <div class="patient-msg-time" id="receivedTime">—</div>
+        </div>
+        <div class="patient-msg-badge" id="receivedBadge" style="display:none;">NEW</div>
+      </div>
+    </div>
+
+    <!-- Voice status -->
+    <div class="voice-status" id="voiceStatus">
+      <div class="voice-dot" style="width:8px;height:8px;background:#dc2626;border-radius:50%;animation:blink 1s infinite;flex-shrink:0;"></div>
+      <div>
+        <div>음성 인식 중...</div>
+        <div style="font-size:11px;color:#6b7280;font-style:italic;" id="voiceTranscript">말씀해 주세요</div>
+      </div>
+    </div>
+
+    <!-- Send buttons -->
+    <div>
+      <div class="section-header">
+        <span class="section-title">메시지 전송</span>
+        <span class="section-sub">환자 화면으로 수어 영상 전송</span>
+      </div>
+      <div class="cmd-grid" id="buttons">
+        <button class="cmd-btn" data-msg="혈압을 측정할게요">
+          <div class="cmd-btn-label">혈압 측정</div>
+          <div class="cmd-btn-sub">혈압을 측정할게요</div>
+        </button>
+        <button class="cmd-btn" data-msg="약을 처방해드릴게요">
+          <div class="cmd-btn-label">약 처방</div>
+          <div class="cmd-btn-sub">약을 처방해드릴게요</div>
+        </button>
+        <button class="cmd-btn" data-msg="소금을 줄여야 해요">
+          <div class="cmd-btn-label">소금 줄이기</div>
+          <div class="cmd-btn-sub">소금을 줄여야 해요</div>
+        </button>
+        <button class="cmd-btn" data-msg="운동이 필요해요">
+          <div class="cmd-btn-label">운동</div>
+          <div class="cmd-btn-sub">운동이 필요해요</div>
+        </button>
+        <button class="cmd-btn" data-msg="다음 주에 오세요">
+          <div class="cmd-btn-label">다음 방문</div>
+          <div class="cmd-btn-sub">다음 주에 오세요</div>
+        </button>
+        <button class="cmd-btn" data-msg="검사가 필요해요">
+          <div class="cmd-btn-label">검사</div>
+          <div class="cmd-btn-sub">검사가 필요해요</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Sent log -->
+    <div>
+      <div class="section-header">
+        <span class="section-title">전송 내역</span>
+        <span class="section-sub">오늘</span>
+      </div>
+      <div class="sent-log">
+        <div class="sent-log-header">구분 · 내용 · 시간</div>
+        <div id="sentLog">
+          <div class="sent-log-row" style="color:var(--fg4);font-size:12px;justify-content:center;">전송 내역 없음</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="statusbar">
+  <div class="statusbar-item">
+    <div class="status-dot-sm" id="fbDot"></div>
+    <span id="fbStatus">Firebase 연결 중...</span>
+  </div>
+  <div class="statusbar-divider"></div>
+  <div class="statusbar-item"><span>고혈압 외래 · 3진료실</span></div>
+  <div class="statusbar-spacer"></div>
+  <div class="statusbar-item"><span id="clock"></span></div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+  import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBtzt-_sU8254xSSJ29jnNNpRKZz3X5nMs",
+    authDomain: "sign-health.firebaseapp.com",
+    databaseURL: "https://sign-health-default-rtdb.firebaseio.com",
+    projectId: "sign-health",
+    storageBucket: "sign-health.firebasestorage.app",
+    messagingSenderId: "117629635026",
+    appId: "1:117629635026:web:9d0e632ae33bec361fa00b"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  // Firebase 연결 상태
+  const connectedRef = ref(db, '.info/connected');
+  onValue(connectedRef, (snap) => {
+    const dot = document.getElementById('fbDot');
+    const status = document.getElementById('fbStatus');
+    if (snap.val()) {
+      dot.classList.add('connected');
+      status.textContent = 'Firebase 연결됨';
+    } else {
+      dot.classList.remove('connected');
+      status.textContent = 'Firebase 연결 중...';
+    }
+  });
+
+  // 전송 로그 배열
+  const sentHistory = [];
+
+  function timeStr() {
+    return new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  }
+
+  function send(message) {
+    set(ref(db, 'doctor_message'), {
+      text: message,
+      time: Date.now()
+    });
+
+    // 선택 버튼 하이라이트
+    document.querySelectorAll('.cmd-btn').forEach(b => b.classList.remove('active'));
+    const clicked = [...document.querySelectorAll('.cmd-btn')].find(b => b.dataset.msg === message);
+    if (clicked) clicked.classList.add('active');
+
+    // 진료 기록 업데이트
+    const logFirst = document.getElementById('logFirst');
+    logFirst.querySelector('.log-time').textContent = timeStr().slice(0, 5);
+    logFirst.querySelector('.log-text').textContent = message + ' 전달';
+
+    // 전송 내역 추가
+    sentHistory.unshift({ text: message, time: timeStr() });
+    renderSentLog();
+  }
+
+  function renderSentLog() {
+    const container = document.getElementById('sentLog');
+    if (sentHistory.length === 0) {
+      container.innerHTML = '<div class="sent-log-row" style="color:var(--fg4);font-size:12px;justify-content:center;">전송 내역 없음</div>';
+      return;
+    }
+    container.innerHTML = sentHistory.slice(0, 10).map(item => `
+      <div class="sent-log-row">
+        <span class="sent-log-cat">진료</span>
+        <span class="sent-log-text">${item.text}</span>
+        <span class="sent-log-time">${item.time}</span>
+      </div>
+    `).join('');
+  }
+
+  // 환자 메시지 수신
+  onValue(ref(db, 'patient_message'), (snapshot) => {
+    const data = snapshot.val();
+    if (data && data.text) {
+      document.getElementById('receivedText').textContent = data.text;
+      const t = new Date(data.time);
+      document.getElementById('receivedTime').textContent =
+        t.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }) + ' 수신';
+      document.getElementById('receivedBadge').style.display = '';
+    }
+  });
+
+  // 버튼 이벤트
+  document.querySelectorAll('[data-msg]').forEach(btn => {
+    btn.addEventListener('click', () => send(btn.dataset.msg));
+  });
+
+  // 음성 인식
+  let recognition = null;
+  let listening = false;
+  const VOICE_MAP = {
+    '혈압': '혈압을 측정할게요',
+    '측정': '혈압을 측정할게요',
+    '약': '약을 처방해드릴게요',
+    '처방': '약을 처방해드릴게요',
+    '소금': '소금을 줄여야 해요',
+    '운동': '운동이 필요해요',
+    '다음': '다음 주에 오세요',
+    '방문': '다음 주에 오세요',
+    '검사': '검사가 필요해요',
+  };
+
+  window.toggleVoice = function() {
+    const btn = document.getElementById('voiceBtn');
+    const status = document.getElementById('voiceStatus');
+    listening = !listening;
+
+    if (listening) {
+      btn.classList.add('listening');
+      btn.innerHTML = '<div class="voice-dot"></div> 인식 중지';
+      status.classList.add('active');
+
+      if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SR();
+        recognition.lang = 'ko-KR';
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.onresult = (e) => {
+          const transcript = Array.from(e.results).map(r => r[0].transcript).join('');
+          document.getElementById('voiceTranscript').textContent = transcript;
+          if (e.results[e.results.length - 1].isFinal) {
+            for (const [keyword, msg] of Object.entries(VOICE_MAP)) {
+              if (transcript.includes(keyword)) { send(msg); break; }
+            }
+          }
+        };
+        recognition.start();
+      } else {
+        document.getElementById('voiceTranscript').textContent = '이 브라우저는 음성인식을 지원하지 않습니다';
+      }
+    } else {
+      btn.classList.remove('listening');
+      btn.innerHTML = '<div class="voice-dot"></div> 음성 인식';
+      status.classList.remove('active');
+      if (recognition) { recognition.stop(); recognition = null; }
+    }
+  };
+
+  // 시계
+  function tick() {
+    document.getElementById('clock').textContent =
+      new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  }
+  tick(); setInterval(tick, 1000);
+</script>
+</body>
+</html>
