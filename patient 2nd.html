@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>환자 화면</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f4f5f7;
+      --surface: #ffffff;
+      --surface2: #f9fafb;
+      --border: #e0e3ea;
+      --fg: #111827;
+      --fg2: #374151;
+      --fg3: #6b7280;
+      --fg4: #9ca3af;
+      --accent: #1d4ed8;
+      --accent-bg: #eff6ff;
+      --accent-border: #bfdbfe;
+      --green: #15803d;
+      --green-bg: #f0fdf4;
+      --green-border: #bbf7d0;
+      --statusbar: #1e2537;
+      --statusbar-fg: #c9d0e0;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      font-size: 14px;
+      overflow: hidden;
+    }
+
+    /* Top nav */
+    .topnav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .topnav-left { display: flex; align-items: center; gap: 16px; }
+    .app-name { font-size: 15px; font-weight: 700; color: var(--fg); letter-spacing: -0.02em; }
+    .app-name span { color: var(--accent); }
+    .nav-divider { width: 1px; height: 18px; background: var(--border); }
+    .role-badge { display: flex; align-items: center; gap: 8px; }
+    .role-tag {
+      background: var(--green); color: white;
+      font-size: 11px; font-weight: 700;
+      padding: 3px 9px; border-radius: 4px; letter-spacing: 0.04em;
+    }
+    .dept-tag {
+      background: var(--green-bg); border: 1px solid var(--green-border);
+      color: var(--green); font-size: 11px; font-weight: 600;
+      padding: 2px 8px; border-radius: 4px;
+    }
+
+    /* Layout */
+    .main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      min-height: 0;
+      gap: 0;
+    }
+
+    /* Left: camera panel */
+    .camera-panel {
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+      min-height: 0;
+    }
+
+    .camera-wrap {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #000;
+      flex-shrink: 0;
+      aspect-ratio: 4/3;
+      max-height: 480px;
+    }
+    .live-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(220, 38, 38, 0.92);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 3px 8px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      z-index: 10;
+    }
+    .live-badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #fff;
+      animation: livePulse 1.2s ease-in-out infinite;
+    }
+    @keyframes livePulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    #camera {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .camera-svg {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+    }
+
+    /* Recognition result */
+    .recog-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      display: flex; align-items: center; gap: 14px;
+      flex-shrink: 0;
+    }
+    .recog-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--fg4); flex-shrink: 0;
+      transition: background 0.3s;
+    }
+    .recog-dot.detecting { background: #f59e0b; animation: pulse 1s infinite; }
+    .recog-dot.confirmed { background: var(--green); }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .recog-main { flex: 1; }
+    .recog-label { font-size: 10px; font-weight: 600; color: var(--fg4); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 3px; }
+    .recog-text { font-size: 22px; font-weight: 700; color: var(--fg3); letter-spacing: -0.02em; }
+    .recog-text.detecting { color: #d97706; }
+    .recog-text.confirmed { color: var(--green); }
+    .recog-progress {
+      font-size: 10px; color: var(--fg4); margin-top: 3px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Gesture guide */
+    .gesture-guide {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .gesture-guide-header {
+      padding: 8px 14px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .gesture-guide-label {
+      font-size: 10px; font-weight: 600; color: var(--fg3);
+      letter-spacing: 0.08em; text-transform: uppercase;
+    }
+    .gesture-guide-note {
+      font-size: 10px; color: var(--accent); font-weight: 500;
+    }
+    .gesture-row {
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .gesture-row:last-child { border-bottom: none; }
+    .gesture-status-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--border); flex-shrink: 0;
+      transition: background 0.2s;
+    }
+    .gesture-status-dot.active { background: var(--accent); }
+    .gesture-code {
+      font-size: 13px; font-weight: 700; color: var(--fg);
+      min-width: 52px; letter-spacing: -0.01em;
+    }
+    .gesture-desc { font-size: 11px; color: var(--fg3); flex: 1; line-height: 1.4; }
+    .gesture-hint { display: none; }
+
+    /* Right: message panel */
+    .message-panel {
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow-y: auto;
+      min-height: 0;
+    }
+    .msg-section {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+    .msg-section:last-child { border-bottom: none; }
+    .msg-section-label {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--fg4); margin-bottom: 10px;
+    }
+
+    /* Doctor message */
+    .doctor-msg-box {
+      background: var(--accent-bg);
+      border: 1px solid var(--accent-border);
+      border-radius: 8px; padding: 12px 14px;
+    }
+    .doctor-msg-label { font-size: 10px; font-weight: 600; color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
+    .doctor-msg-text { font-size: 22px; font-weight: 700; color: var(--accent); letter-spacing: -0.02em; }
+    .doctor-msg-time { font-size: 10px; color: #3b82f6; margin-top: 4px; font-variant-numeric: tabular-nums; }
+
+    /* Received history */
+    .recv-row {
+      padding: 7px 0;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .recv-row:last-child { border-bottom: none; }
+    .recv-text { font-size: 14px; font-weight: 500; color: var(--fg2); flex: 1; }
+    .recv-time { font-size: 10px; color: var(--fg4); font-variant-numeric: tabular-nums; }
+
+    /* Patient sent */
+    .patient-sent-row {
+      padding: 7px 0;
+      border-bottom: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .patient-sent-row:last-child { border-bottom: none; }
+    .patient-sent-text { font-size: 15px; font-weight: 700; color: var(--green); }
+    .patient-sent-meta { font-size: 10px; color: var(--fg4); font-variant-numeric: tabular-nums; }
+
+    /* Status bar */
+    .statusbar {
+      background: var(--statusbar); color: var(--statusbar-fg);
+      height: 28px; display: flex; align-items: center;
+      padding: 0 16px; gap: 20px; flex-shrink: 0;
+      font-size: 11px; font-variant-numeric: tabular-nums;
+    }
+    .statusbar-item { display: flex; align-items: center; gap: 6px; }
+    .status-dot-sm { width: 5px; height: 5px; border-radius: 50%; background: #6b7280; }
+    .status-dot-sm.connected { background: #22c55e; }
+    .statusbar-divider { width: 1px; height: 12px; background: rgba(255,255,255,0.15); }
+    .statusbar-spacer { flex: 1; }
+  </style>
+</head>
+<body>
+
+<div class="topnav">
+  <div class="topnav-left">
+    <div class="app-name">Sign<span>Health</span></div>
+    <div class="nav-divider"></div>
+    <div class="role-badge">
+      <span class="role-tag">환자</span>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- Left: Camera + gesture guide -->
+  <div class="camera-panel">
+
+    <div class="camera-wrap">
+      <div class="live-badge">LIVE</div>
+      <video id="camera" autoplay playsinline muted></video>
+      <svg class="camera-svg" viewBox="0 0 320 240" preserveAspectRatio="xMidYMid meet">
+        <ellipse id="silhouette-head" cx="160" cy="60" rx="35" ry="42"
+          fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-dasharray="6,4"/>
+        <path id="silhouette-shoulder" d="M100,110 Q160,95 220,110"
+          fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-dasharray="6,4"/>
+        <path id="silhouette-body" d="M100,110 L90,200 M220,110 L230,200"
+          fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-dasharray="6,4"/>
+        <text x="160" y="228" text-anchor="middle"
+          fill="rgba(255,255,255,0.8)" font-size="11" font-family="sans-serif">
+          실루엣에 맞춰 앉아주세요
+        </text>
+      </svg>
+    </div>
+
+    <!-- Recognition result card -->
+    <div class="recog-card">
+      <div class="recog-dot" id="recogDot"></div>
+      <div class="recog-main">
+        <div class="recog-label">수어 인식 결과</div>
+        <div class="recog-text" id="recogText">인식 대기 중...</div>
+        <div class="recog-progress" id="recogProgress"></div>
+      </div>
+    </div>
+
+    <!-- Gesture guide -->
+    <div class="gesture-guide">
+      <div class="gesture-guide-header">
+        <span class="gesture-guide-label">수어 가이드</span>
+        <span class="gesture-guide-note">10프레임 연속 인식 시 자동 전송</span>
+      </div>
+      <div class="gesture-row">
+        <div class="gesture-status-dot" id="dot-아프다"></div>
+        <span class="gesture-code">아프다</span>
+        <span class="gesture-desc">손가락 반쯤 구부린 채 손바닥 위로, 팔 몸에 붙여 가슴 높이에서 좌우로 흔들기</span>
+        <span class="gesture-hint">손바닥↑ 가슴 흔들기</span>
+      </div>
+      <div class="gesture-row">
+        <div class="gesture-status-dot" id="dot-어지럽다"></div>
+        <span class="gesture-code">어지럽다</span>
+        <span class="gesture-desc">주먹을 쥐고 눈 높이에서 손등이 보이게 시계방향으로 두 번 돌리기</span>
+        <span class="gesture-hint">주먹 눈높이 회전</span>
+      </div>
+      <div class="gesture-row">
+        <div class="gesture-status-dot" id="dot-두통"></div>
+        <span class="gesture-code">두통</span>
+        <span class="gesture-desc">검지로 관자놀이 짚기 → 엄지·검지만 펴서 볼 꼬집기</span>
+        <span class="gesture-hint">관자놀이→볼 꼬집기</span>
+      </div>
+      <div class="gesture-row">
+        <div class="gesture-status-dot" id="dot-약"></div>
+        <span class="gesture-code">약</span>
+        <span class="gesture-desc">한 손 손바닥 펴서 화면 향하게, 반대 손 가운데 손가락으로 손바닥 수직으로 두세 번 비비기</span>
+        <span class="gesture-hint">양손 손바닥 비비기</span>
+      </div>
+      <div class="gesture-row">
+        <div class="gesture-status-dot" id="dot-피곤"></div>
+        <span class="gesture-code">피곤</span>
+        <span class="gesture-desc">양손 펴서 손등이 보이게 가슴 앞에 위치 → 손을 떼며 손목 돌려 손끝이 바깥으로</span>
+        <span class="gesture-hint">손등→손목 돌려 바깥</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Right: Message panel -->
+  <div class="message-panel">
+
+    <div class="msg-section">
+      <div class="msg-section-label">의료진 메시지</div>
+      <div class="doctor-msg-box">
+        <div class="doctor-msg-label">수신됨</div>
+        <div class="doctor-msg-text" id="doctorMsgText">대기 중...</div>
+        <div class="doctor-msg-time" id="doctorMsgTime">—</div>
+      </div>
+    </div>
+
+    <div class="msg-section">
+      <div class="msg-section-label">수신 내역</div>
+      <div id="recvHistory">
+        <div style="font-size:12px;color:var(--fg4);">수신 내역 없음</div>
+      </div>
+    </div>
+
+    <div class="msg-section">
+      <div class="msg-section-label">내가 보낸 메시지</div>
+      <div id="sentHistory">
+        <div style="font-size:12px;color:var(--fg4);">전송 내역 없음</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="statusbar">
+  <div class="statusbar-item">
+    <div class="status-dot-sm" id="fbDot"></div>
+    <span id="fbStatus">Firebase 연결 중...</span>
+  </div>
+  <div class="statusbar-divider"></div>
+  <div class="statusbar-item"><span>고혈압 외래 · 환자 단말</span></div>
+  <div class="statusbar-spacer"></div>
+  <div class="statusbar-item"><span id="clock"></span></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-database-compat.min.js"></script>
+
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBtzt-_sU8254xSSJ29jnNNpRKZz3X5nMs",
+    authDomain: "sign-health.firebaseapp.com",
+    databaseURL: "https://sign-health-default-rtdb.firebaseio.com",
+    projectId: "sign-health",
+    storageBucket: "sign-health.firebasestorage.app",
+    messagingSenderId: "117629635026",
+    appId: "1:117629635026:web:9d0e632ae33bec361fa00b"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  // Firebase 연결 상태
+  db.ref('.info/connected').on('value', (snap) => {
+    const dot = document.getElementById('fbDot');
+    const status = document.getElementById('fbStatus');
+    if (snap.val()) {
+      dot.classList.add('connected');
+      status.textContent = 'Firebase 연결됨';
+    } else {
+      dot.classList.remove('connected');
+      status.textContent = 'Firebase 연결 중...';
+    }
+  });
+
+  function timeStr() {
+    return new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  }
+
+  // 수신 내역
+  const recvHistory = [];
+
+  // 의료진 메시지 수신
+  db.ref('doctor_message').on('value', (snapshot) => {
+    const data = snapshot.val();
+    if (!data || !data.text) return;
+    const t = new Date(data.time);
+    const tStr = t.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+    document.getElementById('doctorMsgText').textContent = data.text;
+    document.getElementById('doctorMsgTime').textContent = tStr + ' 수신';
+
+    recvHistory.unshift({ text: data.text, time: tStr });
+    renderRecvHistory();
+  });
+
+  function renderRecvHistory() {
+    const el = document.getElementById('recvHistory');
+    if (recvHistory.length === 0) {
+      el.innerHTML = '<div style="font-size:12px;color:var(--fg4);">수신 내역 없음</div>';
+      return;
+    }
+    el.innerHTML = recvHistory.slice(0, 8).map(item => `
+      <div class="recv-row">
+        <span class="recv-text">${item.text}</span>
+        <span class="recv-time">${item.time}</span>
+      </div>
+    `).join('');
+  }
+
+  // 보낸 내역
+  const sentList = [];
+
+  function sendGesture(gesture) {
+    db.ref('patient_message').set({ text: gesture, time: Date.now() });
+    sentList.unshift({ text: gesture, time: timeStr() });
+    renderSentHistory();
+  }
+
+  function renderSentHistory() {
+    const el = document.getElementById('sentHistory');
+    if (sentList.length === 0) {
+      el.innerHTML = '<div style="font-size:12px;color:var(--fg4);">전송 내역 없음</div>';
+      return;
+    }
+    el.innerHTML = sentList.slice(0, 8).map(item => `
+      <div class="patient-sent-row">
+        <span class="patient-sent-text">${item.text}</span>
+        <span class="patient-sent-meta">${item.time} · 수어 인식 전송</span>
+      </div>
+    `).join('');
+  }
+
+  // MediaPipe Hands
+  const videoEl = document.getElementById('camera');
+  let gestureBuffer = [];
+  const CONFIRM_FRAMES = 10;
+  let currentGesture = '';
+
+  // 피로 시퀀스 감지용
+  // phase 0: 대기, phase 1: 가슴 앞 손등(시작 자세) 확인, phase 2: 손목 돌려 바깥 향하는 중
+  let tiredPhase = 0;
+  let tiredPhaseFrames = 0;
+  const TIRED_PHASE_FRAMES = 6; // 각 단계 유지 프레임
+
+  const hands = new Hands({
+    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+  });
+
+  hands.setOptions({
+    maxNumHands: 1,
+    modelComplexity: 1,
+    minDetectionConfidence: 0.7,
+    minTrackingConfidence: 0.5
+  });
+
+  function setSilhouette(detected) {
+    const color = detected ? 'rgba(72,187,120,0.9)' : 'rgba(255,255,255,0.6)';
+    document.getElementById('silhouette-head').setAttribute('stroke', color);
+    document.getElementById('silhouette-shoulder').setAttribute('stroke', color);
+    document.getElementById('silhouette-body').setAttribute('stroke', color);
+  }
+
+  function setGestureDot(name, active) {
+    const dot = document.getElementById('dot-' + name);
+    if (dot) dot.classList.toggle('active', active);
+  }
+
+  function clearAllDots() {
+    document.querySelectorAll('.gesture-status-dot').forEach(d => d.classList.remove('active'));
+  }
+
+  hands.onResults((results) => {
+    const recogDot = document.getElementById('recogDot');
+    const recogText = document.getElementById('recogText');
+    const recogProgress = document.getElementById('recogProgress');
+
+    if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
+      setSilhouette(false);
+      clearAllDots();
+      recogDot.className = 'recog-dot';
+      recogText.className = 'recog-text';
+      recogText.textContent = '인식 대기 중...';
+      recogProgress.textContent = '';
+      gestureBuffer = [];
+      tiredPhase = 0;
+      tiredPhaseFrames = 0;
+      return;
+    }
+
+    setSilhouette(true);
+    const lm = results.multiHandLandmarks[0];
+
+    const fingers = {
+      index:  lm[8].y  < lm[6].y,
+      middle: lm[12].y < lm[10].y,
+      ring:   lm[16].y < lm[14].y,
+      pinky:  lm[20].y < lm[18].y
+    };
+
+    const allClosed = !fingers.index && !fingers.middle;
+    const onlyIndex = fingers.index && !fingers.middle && !fingers.ring && !fingers.pinky;
+    const allOpen = fingers.index && fingers.middle && fingers.ring && fingers.pinky;
+    const handY = lm[0].y;
+    const palmUp = lm[4].x > lm[20].x;   // 오른손 기준: 엄지가 새끼 오른쪽 → 손바닥 위를 향함
+    const palmDown = lm[4].x < lm[20].x; // 손등이 카메라를 향함
+    const atFace  = handY < 0.35;
+    const atChest = handY >= 0.40 && handY < 0.85;
+
+    // 피로 시퀀스: 손등이 카메라 향하며 가슴 → 손목 돌려 손끝이 옆(lateral)으로
+    // phase1: allOpen + palmDown + atChest (시작 자세)
+    // phase2: allOpen + palmUp 또는 손끝이 옆으로 (손목 돌린 후)
+    const tiredStart = allOpen && palmDown && atChest; // 손등 보이며 가슴 앞
+    const tiredEnd   = allOpen && !atChest && handY > 0.2; // 가슴에서 떼어내 손목 돌린 상태
+
+    if (tiredStart && tiredPhase === 0) {
+      tiredPhase = 1;
+      tiredPhaseFrames = 0;
+    } else if (tiredPhase === 1) {
+      if (tiredStart) {
+        tiredPhaseFrames++;
+      } else if (tiredEnd) {
+        tiredPhase = 2;
+        tiredPhaseFrames = 0;
+      } else {
+        tiredPhase = 0;
+        tiredPhaseFrames = 0;
+      }
+    } else if (tiredPhase === 2) {
+      if (tiredEnd) {
+        tiredPhaseFrames++;
+      } else {
+        tiredPhase = 0;
+        tiredPhaseFrames = 0;
+      }
+    }
+
+    const tiredSequenceDetected = tiredPhase === 2 && tiredPhaseFrames >= TIRED_PHASE_FRAMES;
+    if (tiredSequenceDetected) { tiredPhase = 0; tiredPhaseFrames = 0; }
+
+    let gesture = '';
+    if (tiredSequenceDetected)        gesture = '피곤';
+    else if (palmUp && atChest)       gesture = '아프다';
+    else if (allClosed && atFace)     gesture = '어지럽다';
+    else if (onlyIndex && atFace)     gesture = '두통';
+    else if (allOpen && atChest && !palmDown) gesture = '약';
+
+    clearAllDots();
+
+    if (gesture) {
+      setGestureDot(gesture, true);
+      recogDot.className = 'recog-dot detecting';
+      recogText.className = 'recog-text detecting';
+      recogText.textContent = gesture + ' 감지 중...';
+
+      gestureBuffer.push(gesture);
+      if (gestureBuffer.length > CONFIRM_FRAMES) gestureBuffer.shift();
+
+      const allSame = gestureBuffer.length === CONFIRM_FRAMES &&
+        gestureBuffer.every(g => g === gestureBuffer[0]);
+
+      recogProgress.textContent = `${gestureBuffer.filter(g => g === gesture).length} / ${CONFIRM_FRAMES} 프레임`;
+
+      if (allSame) {
+        recogDot.className = 'recog-dot confirmed';
+        recogText.className = 'recog-text confirmed';
+        recogText.textContent = gesture + ' 전송됨';
+        recogProgress.textContent = '✓ 전송 완료';
+        sendGesture(gesture);
+        gestureBuffer = [];
+      }
+    } else {
+      recogDot.className = 'recog-dot detecting';
+      recogText.className = 'recog-text';
+      recogText.textContent = '손 인식됨';
+      recogProgress.textContent = '수어 동작을 취해주세요';
+      gestureBuffer = [];
+    }
+  });
+
+  navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+    videoEl.srcObject = stream;
+    videoEl.play();
+    videoEl.onloadeddata = () => {
+      const loop = async () => {
+        await hands.send({ image: videoEl });
+        requestAnimationFrame(loop);
+      };
+      loop();
+    };
+  }).catch((err) => {
+    document.getElementById('recogText').textContent = '카메라 오류: ' + err.message;
+  });
+
+  // 시계
+  function tick() {
+    document.getElementById('clock').textContent =
+      new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  }
+  tick(); setInterval(tick, 1000);
+</script>
+</body>
+</html>
