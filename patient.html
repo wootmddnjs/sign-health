@@ -83,6 +83,12 @@
       min-height: 0;
     }
 
+    .camera-row {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      flex-shrink: 0;
+    }
     .camera-wrap {
       position: relative;
       border-radius: 12px;
@@ -93,6 +99,45 @@
       width: 70%;
       max-height: none;
     }
+    .patient-info-card {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 0;
+    }
+    .pi-avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--accent-bg); border: 1px solid var(--accent-border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 700; color: var(--accent); flex-shrink: 0;
+    }
+    .pi-name { font-size: 15px; font-weight: 700; color: var(--fg); letter-spacing: -0.02em; }
+    .pi-meta { font-size: 11px; color: var(--fg3); margin-top: 1px; }
+    .pi-divider { height: 1px; background: var(--border); }
+    .pi-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 3px 0;
+    }
+    .pi-key { font-size: 10px; color: var(--fg4); font-weight: 500; }
+    .pi-val { font-size: 12px; font-weight: 700; color: var(--fg2); }
+    .pi-val.red { color: #b91c1c; }
+    .pi-bp {
+      background: #fef2f2; border: 1px solid #fecaca;
+      border-radius: 8px; padding: 8px 10px; text-align: center;
+    }
+    .pi-bp-val { font-size: 20px; font-weight: 700; color: #b91c1c; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+    .pi-bp-label { font-size: 9px; color: #b91c1c; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; margin-top: 1px; }
+    .pi-badge {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      padding: 2px 7px; border-radius: 4px; letter-spacing: 0.03em;
+    }
+    .pi-badge.dept { background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent-border); }
+    .pi-badge.disability { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
     .live-badge {
       position: absolute;
       top: 10px;
@@ -296,21 +341,56 @@
   <!-- Left: Camera + gesture guide -->
   <div class="camera-panel">
 
-    <div class="camera-wrap">
-      <div class="live-badge">LIVE</div>
-      <video id="camera" autoplay playsinline muted></video>
-      <svg class="camera-svg" viewBox="0 0 320 240" preserveAspectRatio="xMidYMid meet">
-        <ellipse id="silhouette-head" cx="160" cy="60" rx="35" ry="42"
-          fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-dasharray="6,4"/>
-        <path id="silhouette-shoulder" d="M100,110 Q160,95 220,110"
-          fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-dasharray="6,4"/>
-        <path id="silhouette-body" d="M100,110 L90,200 M220,110 L230,200"
-          fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-dasharray="6,4"/>
-        <text x="160" y="228" text-anchor="middle"
-          fill="rgba(255,255,255,0.8)" font-size="11" font-family="sans-serif">
-          실루엣에 맞춰 앉아주세요
-        </text>
-      </svg>
+    <div class="camera-row">
+      <div class="camera-wrap">
+        <div class="live-badge">LIVE</div>
+        <video id="camera" autoplay playsinline muted></video>
+        <svg class="camera-svg" viewBox="0 0 320 240" preserveAspectRatio="xMidYMid meet">
+          <ellipse id="silhouette-head" cx="160" cy="60" rx="35" ry="42"
+            fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-dasharray="6,4"/>
+          <path id="silhouette-shoulder" d="M100,110 Q160,95 220,110"
+            fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-dasharray="6,4"/>
+          <path id="silhouette-body" d="M100,110 L90,200 M220,110 L230,200"
+            fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-dasharray="6,4"/>
+          <text x="160" y="228" text-anchor="middle"
+            fill="rgba(255,255,255,0.8)" font-size="11" font-family="sans-serif">
+            실루엣에 맞춰 앉아주세요
+          </text>
+        </svg>
+      </div>
+
+      <!-- 환자 정보 카드 -->
+      <div class="patient-info-card">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="pi-avatar">김</div>
+          <div>
+            <div class="pi-name">김○○</div>
+            <div class="pi-meta">67세 · 여성</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;">
+          <span class="pi-badge dept">고혈압 외래</span>
+          <span class="pi-badge disability">청각장애 2급</span>
+        </div>
+        <div class="pi-divider"></div>
+        <div class="pi-bp">
+          <div class="pi-bp-val">158 / 96</div>
+          <div class="pi-bp-label">mmHg · 오늘 측정</div>
+        </div>
+        <div class="pi-divider"></div>
+        <div class="pi-row">
+          <span class="pi-key">등록번호</span>
+          <span class="pi-val">2024-03847</span>
+        </div>
+        <div class="pi-row">
+          <span class="pi-key">담당의</span>
+          <span class="pi-val">이○○ 교수</span>
+        </div>
+        <div class="pi-row">
+          <span class="pi-key">담당간호사</span>
+          <span class="pi-val">박○○ RN</span>
+        </div>
+      </div>
     </div>
 
     <!-- Recognition result card -->
@@ -326,38 +406,48 @@
     <!-- Gesture guide -->
     <div class="gesture-guide">
       <div class="gesture-guide-header">
-        <span class="gesture-guide-label">수어 가이드</span>
-        <span class="gesture-guide-note">10프레임 연속 인식 시 자동 전송</span>
+        <span class="gesture-guide-label">인식 가능한 수어</span>
+        <span class="gesture-guide-note">AI 모델 자동 인식 · 5초 쿨다운</span>
       </div>
       <div class="gesture-row">
         <div class="gesture-status-dot" id="dot-아프다"></div>
         <span class="gesture-code">아프다</span>
-        <span class="gesture-desc">손가락 반쯤 구부린 채 손바닥 위로, 팔 몸에 붙여 가슴 높이에서 좌우로 흔들기</span>
-        <span class="gesture-hint">손바닥↑ 가슴 흔들기</span>
+        <span class="gesture-hint">통증 호소</span>
       </div>
       <div class="gesture-row">
         <div class="gesture-status-dot" id="dot-어지럽다"></div>
         <span class="gesture-code">어지럽다</span>
-        <span class="gesture-desc">주먹을 쥐고 눈 높이에서 손등이 보이게 시계방향으로 두 번 돌리기</span>
-        <span class="gesture-hint">주먹 눈높이 회전</span>
+        <span class="gesture-hint">어지러움</span>
       </div>
       <div class="gesture-row">
         <div class="gesture-status-dot" id="dot-두통"></div>
         <span class="gesture-code">두통</span>
-        <span class="gesture-desc">검지로 관자놀이 짚기 → 엄지·검지만 펴서 볼 꼬집기</span>
-        <span class="gesture-hint">관자놀이→볼 꼬집기</span>
+        <span class="gesture-hint">머리 통증</span>
       </div>
       <div class="gesture-row">
         <div class="gesture-status-dot" id="dot-약"></div>
         <span class="gesture-code">약</span>
-        <span class="gesture-desc">한 손 손바닥 펴서 화면 향하게, 반대 손 가운데 손가락으로 손바닥 수직으로 두세 번 비비기</span>
-        <span class="gesture-hint">양손 손바닥 비비기</span>
+        <span class="gesture-hint">약 복용</span>
       </div>
       <div class="gesture-row">
         <div class="gesture-status-dot" id="dot-피곤"></div>
         <span class="gesture-code">피곤</span>
-        <span class="gesture-desc">양손 펴서 손등이 보이게 가슴 앞에 위치 → 손을 떼며 손목 돌려 손끝이 바깥으로</span>
-        <span class="gesture-hint">손등→손목 돌려 바깥</span>
+        <span class="gesture-hint">피로감</span>
+      </div>
+      <div class="gesture-row">
+        <div class="gesture-status-dot" id="dot-혈압"></div>
+        <span class="gesture-code">혈압</span>
+        <span class="gesture-hint">혈압 관련</span>
+      </div>
+      <div class="gesture-row">
+        <div class="gesture-status-dot" id="dot-걱정"></div>
+        <span class="gesture-code">걱정</span>
+        <span class="gesture-hint">불안·걱정</span>
+      </div>
+      <div class="gesture-row">
+        <div class="gesture-status-dot" id="dot-먹다"></div>
+        <span class="gesture-code">먹다</span>
+        <span class="gesture-hint">식사·복약</span>
       </div>
     </div>
 
@@ -403,9 +493,10 @@
   <div class="statusbar-item"><span id="clock"></span></div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-database-compat.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/pose@0.8/dist/teachablemachine-pose.min.js"></script>
 
 <script>
   const firebaseConfig = {
@@ -517,30 +608,18 @@
     `).join('');
   }
 
-  // MediaPipe Hands
+  // Teachable Machine Pose 모델
+  const MODEL_URL = 'https://teachablemachine.withgoogle.com/models/VFnakb498/';
+  const CONFIDENCE_THRESHOLD = 0.80; // 80% 이상일 때만 인식
+  const CONFIRM_FRAMES = 15;         // 연속 프레임 확인
+  const COOLDOWN_MS = 5000;          // 전송 후 5초 쿨다운
+  // '없음' 클래스는 무시 (아무 동작 없음)
+  const IGNORE_CLASSES = new Set(['없음']);
+
   const videoEl = document.getElementById('camera');
+  let tmModel = null;
   let gestureBuffer = [];
-  const CONFIRM_FRAMES = 10;
-  let currentGesture = '';
   let lastSentTime = 0;
-  const COOLDOWN_MS = 5000; // 전송 후 5초간 재전송 금지
-
-  // 피로 시퀀스 감지용
-  // phase 0: 대기, phase 1: 가슴 앞 손등(시작 자세) 확인, phase 2: 손목 돌려 바깥 향하는 중
-  let tiredPhase = 0;
-  let tiredPhaseFrames = 0;
-  const TIRED_PHASE_FRAMES = 6; // 각 단계 유지 프레임
-
-  const hands = new Hands({
-    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-  });
-
-  hands.setOptions({
-    maxNumHands: 1,
-    modelComplexity: 1,
-    minDetectionConfidence: 0.7,
-    minTrackingConfidence: 0.5
-  });
 
   function setSilhouette(detected) {
     const color = detected ? 'rgba(72,187,120,0.9)' : 'rgba(255,255,255,0.6)';
@@ -549,97 +628,66 @@
     document.getElementById('silhouette-body').setAttribute('stroke', color);
   }
 
+  function clearAllDots() {
+    document.querySelectorAll('.gesture-status-dot').forEach(d => d.classList.remove('active'));
+  }
+
   function setGestureDot(name, active) {
     const dot = document.getElementById('dot-' + name);
     if (dot) dot.classList.toggle('active', active);
   }
 
-  function clearAllDots() {
-    document.querySelectorAll('.gesture-status-dot').forEach(d => d.classList.remove('active'));
+  async function initTM() {
+    const recogText = document.getElementById('recogText');
+    recogText.textContent = 'AI 모델 로딩 중...';
+    try {
+      const modelURL = MODEL_URL + 'model.json';
+      const metadataURL = MODEL_URL + 'metadata.json';
+      tmModel = await tmPose.load(modelURL, metadataURL);
+      recogText.textContent = '인식 대기 중...';
+      startCamera();
+    } catch(e) {
+      recogText.textContent = '모델 로드 실패: ' + e.message;
+    }
   }
 
-  hands.onResults((results) => {
+  function startCamera() {
+    navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+      videoEl.srcObject = stream;
+      videoEl.play();
+      videoEl.onloadeddata = () => { loop(); };
+    }).catch((err) => {
+      document.getElementById('recogText').textContent = '카메라 오류: ' + err.message;
+    });
+  }
+
+  async function loop() {
+    if (!tmModel) return;
     const recogDot = document.getElementById('recogDot');
     const recogText = document.getElementById('recogText');
     const recogProgress = document.getElementById('recogProgress');
 
-    if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
+    const { pose, posenetOutput } = await tmModel.estimatePose(videoEl);
+    const predictions = await tmModel.predict(posenetOutput);
+
+    // 가장 높은 confidence 클래스 찾기
+    let best = predictions.reduce((a, b) => a.probability > b.probability ? a : b);
+
+    if (pose && pose.keypoints && pose.keypoints.length > 0) {
+      setSilhouette(true);
+    } else {
       setSilhouette(false);
+    }
+
+    if (best.probability >= CONFIDENCE_THRESHOLD && !IGNORE_CLASSES.has(best.className)) {
+      const gesture = best.className;
+      const pct = Math.round(best.probability * 100);
+
       clearAllDots();
-      recogDot.className = 'recog-dot';
-      recogText.className = 'recog-text';
-      recogText.textContent = '인식 대기 중...';
-      recogProgress.textContent = '';
-      gestureBuffer = [];
-      tiredPhase = 0;
-      tiredPhaseFrames = 0;
-      return;
-    }
-
-    setSilhouette(true);
-    const lm = results.multiHandLandmarks[0];
-
-    const fingers = {
-      index:  lm[8].y  < lm[6].y,
-      middle: lm[12].y < lm[10].y,
-      ring:   lm[16].y < lm[14].y,
-      pinky:  lm[20].y < lm[18].y
-    };
-
-    const allClosed = !fingers.index && !fingers.middle;
-    const onlyIndex = fingers.index && !fingers.middle && !fingers.ring && !fingers.pinky;
-    const allOpen = fingers.index && fingers.middle && fingers.ring && fingers.pinky;
-    const handY = lm[0].y;
-    const palmUp = lm[4].x > lm[20].x;   // 오른손 기준: 엄지가 새끼 오른쪽 → 손바닥 위를 향함
-    const palmDown = lm[4].x < lm[20].x; // 손등이 카메라를 향함
-    const atFace  = handY < 0.35;
-    const atChest = handY >= 0.40 && handY < 0.85;
-
-    // 피로 시퀀스: 손등이 카메라 향하며 가슴 → 손목 돌려 손끝이 옆(lateral)으로
-    // phase1: allOpen + palmDown + atChest (시작 자세)
-    // phase2: allOpen + palmUp 또는 손끝이 옆으로 (손목 돌린 후)
-    const tiredStart = allOpen && palmDown && atChest; // 손등 보이며 가슴 앞
-    const tiredEnd   = allOpen && !atChest && handY > 0.2; // 가슴에서 떼어내 손목 돌린 상태
-
-    if (tiredStart && tiredPhase === 0) {
-      tiredPhase = 1;
-      tiredPhaseFrames = 0;
-    } else if (tiredPhase === 1) {
-      if (tiredStart) {
-        tiredPhaseFrames++;
-      } else if (tiredEnd) {
-        tiredPhase = 2;
-        tiredPhaseFrames = 0;
-      } else {
-        tiredPhase = 0;
-        tiredPhaseFrames = 0;
-      }
-    } else if (tiredPhase === 2) {
-      if (tiredEnd) {
-        tiredPhaseFrames++;
-      } else {
-        tiredPhase = 0;
-        tiredPhaseFrames = 0;
-      }
-    }
-
-    const tiredSequenceDetected = tiredPhase === 2 && tiredPhaseFrames >= TIRED_PHASE_FRAMES;
-    if (tiredSequenceDetected) { tiredPhase = 0; tiredPhaseFrames = 0; }
-
-    let gesture = '';
-    if (tiredSequenceDetected)        gesture = '피곤';
-    else if (palmUp && atChest)       gesture = '아프다';
-    else if (allClosed && atFace)     gesture = '어지럽다';
-    else if (onlyIndex && atFace)     gesture = '두통';
-    else if (allOpen && atChest && !palmDown) gesture = '약';
-
-    clearAllDots();
-
-    if (gesture) {
       setGestureDot(gesture, true);
       recogDot.className = 'recog-dot detecting';
       recogText.className = 'recog-text detecting';
-      recogText.textContent = gesture + ' 감지 중...';
+      recogText.textContent = `${gesture} (${pct}%)`;
 
       gestureBuffer.push(gesture);
       if (gestureBuffer.length > CONFIRM_FRAMES) gestureBuffer.shift();
@@ -662,27 +710,20 @@
         gestureBuffer = [];
       }
     } else {
-      recogDot.className = 'recog-dot detecting';
+      clearAllDots();
+      recogDot.className = 'recog-dot';
       recogText.className = 'recog-text';
-      recogText.textContent = '손 인식됨';
-      recogProgress.textContent = '수어 동작을 취해주세요';
+      if (best.probability < CONFIDENCE_THRESHOLD || IGNORE_CLASSES.has(best.className)) {
+        recogText.textContent = '인식 대기 중...';
+        recogProgress.textContent = '';
+      }
       gestureBuffer = [];
     }
-  });
 
-  navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
-    videoEl.srcObject = stream;
-    videoEl.play();
-    videoEl.onloadeddata = () => {
-      const loop = async () => {
-        await hands.send({ image: videoEl });
-        requestAnimationFrame(loop);
-      };
-      loop();
-    };
-  }).catch((err) => {
-    document.getElementById('recogText').textContent = '카메라 오류: ' + err.message;
-  });
+    requestAnimationFrame(loop);
+  }
+
+  initTM();
 
   // 시계
   function tick() {
