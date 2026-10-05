@@ -374,7 +374,7 @@
         <div class="pi-divider"></div>
         <div class="pi-bp">
           <div class="pi-bp-val">158 / 96</div>
-          <div class="pi-bp-label">mmHg · 오늘 측정</div>
+          <div class="pi-bp-label">수축기 / 이완기 (mmHg)</div>
         </div>
         <div class="pi-divider"></div>
         <div class="pi-row">
@@ -607,6 +607,11 @@
     `).join('');
   }
 
+  // 클래스명에서 "Class N " 접두어 제거 (예: "Class 5 피로" → "피로")
+  function cleanClassName(name) {
+    return name.replace(/^[Cc]lass\s*\d+\s*/,'').trim();
+  }
+
   // Teachable Machine Pose 모델
   const MODEL_URL = 'https://teachablemachine.withgoogle.com/models/VFnakb498/';
   const CONFIDENCE_THRESHOLD = 0.80; // 80% 이상일 때만 인식
@@ -678,9 +683,9 @@
       setSilhouette(false);
     }
 
-    if (best.probability >= CONFIDENCE_THRESHOLD && !IGNORE_CLASSES.has(best.className)) {
-      const gesture = best.className;
-      const pct = Math.round(best.probability * 100);
+    const bestClean = cleanClassName(best.className);
+    if (best.probability >= CONFIDENCE_THRESHOLD && !IGNORE_CLASSES.has(bestClean)) {
+      const gesture = bestClean;
 
       clearAllDots();
       setGestureDot(gesture, true);
@@ -712,7 +717,7 @@
       clearAllDots();
       recogDot.className = 'recog-dot';
       recogText.className = 'recog-text';
-      if (best.probability < CONFIDENCE_THRESHOLD || IGNORE_CLASSES.has(best.className)) {
+      if (best.probability < CONFIDENCE_THRESHOLD || IGNORE_CLASSES.has(bestClean)) {
         recogText.textContent = '인식 대기 중...';
         recogProgress.textContent = '';
       }
