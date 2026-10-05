@@ -225,6 +225,14 @@
     }
     .doctor-msg-label { font-size: 10px; font-weight: 600; color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
     .doctor-msg-text { font-size: 22px; font-weight: 700; color: var(--accent); letter-spacing: -0.02em; }
+    .doctor-msg-text .emph {
+      font-size: 1.4em;
+      font-weight: 900;
+      color: #1e40af;
+      background: #dbeafe;
+      border-radius: 4px;
+      padding: 0 3px;
+    }
     .doctor-msg-time { font-size: 10px; color: #3b82f6; margin-top: 4px; font-variant-numeric: tabular-nums; }
 
     /* Received history */
@@ -359,7 +367,7 @@
       <div class="msg-section-label">의료진 메시지</div>
       <div class="doctor-msg-box">
         <div class="doctor-msg-label">수신됨</div>
-        <div class="doctor-msg-text" id="doctorMsgText">대기 중...</div>
+        <div class="doctor-msg-text" id="doctorMsgText" style="line-height:1.5;">대기 중...</div>
         <div class="doctor-msg-time" id="doctorMsgTime">—</div>
       </div>
     </div>
@@ -437,7 +445,14 @@
     const t = new Date(data.time);
     const tStr = t.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
     const sender = data.sender || '의료진';
-    document.getElementById('doctorMsgText').textContent = data.text;
+    const msgEl = document.getElementById('doctorMsgText');
+    if (data.parts && data.parts.length > 0) {
+      msgEl.innerHTML = data.parts.map(p =>
+        p.emph ? `<span class="emph">${p.text}</span>` : p.text
+      ).join('');
+    } else {
+      msgEl.textContent = data.text;
+    }
     document.getElementById('doctorMsgTime').textContent = `${sender} · ${tStr} 수신`;
 
     recvHistory.unshift({ text: data.text, time: tStr, sender });
