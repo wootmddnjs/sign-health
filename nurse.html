@@ -551,6 +551,8 @@
   </div>
   <div class="statusbar-divider"></div>
   <div class="statusbar-item"><span>고혈압 외래 · 간호사실</span></div>
+  <div class="statusbar-divider"></div>
+  <div class="statusbar-item"><span id="roomLabel">방: —</span></div>
   <div class="statusbar-spacer"></div>
   <div class="statusbar-item"><span id="clock"></span></div>
 </div>
@@ -570,6 +572,11 @@
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
+
+  // 방(Room) 설정
+  const roomId = new URLSearchParams(location.search).get('room') || 'default';
+  const roomRef = (path) => db.ref(`rooms/${roomId}/${path}`);
+  document.getElementById('roomLabel').textContent = `방: ${roomId}`;
 
   // Firebase 연결 상태
   db.ref('.info/connected').on('value', (snap) => {
@@ -591,7 +598,7 @@
   }
 
   function send(message, cat) {
-    db.ref('doctor_message').set({ text: message, time: Date.now(), sender: '간호사' });
+    roomRef('doctor_message').set({ text: message, time: Date.now(), sender: '간호사' });
 
     // 버튼 하이라이트
     document.querySelectorAll('.cmd-btn').forEach(b => b.classList.remove('active'));
@@ -625,7 +632,7 @@
   }
 
   // 환자 메시지 수신
-  db.ref('patient_message').on('value', (snapshot) => {
+  roomRef('patient_message').on('value', (snapshot) => {
     const data = snapshot.val();
     if (!data || !data.text) return;
     const t = new Date(data.time);
@@ -729,7 +736,7 @@
       }
     });
     const plainText = parts.map(p => p.text).join('');
-    db.ref('doctor_message').set({
+    roomRef('doctor_message').set({
       text: plainText,
       parts: parts,
       time: Date.now(),

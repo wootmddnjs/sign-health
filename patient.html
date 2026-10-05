@@ -488,6 +488,8 @@
   </div>
   <div class="statusbar-divider"></div>
   <div class="statusbar-item"><span>고혈압 외래 · 환자 단말</span></div>
+  <div class="statusbar-divider"></div>
+  <div class="statusbar-item"><span id="roomLabel">방: —</span></div>
   <div class="statusbar-spacer"></div>
   <div class="statusbar-item"><span id="clock"></span></div>
 </div>
@@ -511,6 +513,11 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
+  // 방(Room) 설정 — URL 파라미터 ?room=팀1 로 지정, 없으면 'default'
+  const roomId = new URLSearchParams(location.search).get('room') || 'default';
+  const roomRef = (path) => db.ref(`rooms/${roomId}/${path}`);
+  document.getElementById('roomLabel').textContent = `방: ${roomId}`;
+
   // Firebase 연결 상태
   db.ref('.info/connected').on('value', (snap) => {
     const dot = document.getElementById('fbDot');
@@ -532,7 +539,7 @@
   const recvHistory = [];
 
   // 의료진 메시지 수신
-  db.ref('doctor_message').on('value', (snapshot) => {
+  roomRef('doctor_message').on('value', (snapshot) => {
     const data = snapshot.val();
     if (!data || !data.text) return;
     const t = new Date(data.time);
@@ -588,7 +595,7 @@
   const sentList = [];
 
   function sendGesture(gesture) {
-    db.ref('patient_message').set({ text: gesture, time: Date.now() });
+    roomRef('patient_message').set({ text: gesture, time: Date.now() });
     sentList.unshift({ text: gesture, time: timeStr() });
     renderSentHistory();
   }
