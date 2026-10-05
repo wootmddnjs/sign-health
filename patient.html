@@ -68,7 +68,7 @@
     .main {
       flex: 1;
       display: grid;
-      grid-template-columns: 1fr 420px;
+      grid-template-columns: 1fr 480px;
       min-height: 0;
       gap: 0;
     }
@@ -90,7 +90,8 @@
       background: #000;
       flex-shrink: 0;
       aspect-ratio: 4/3;
-      max-height: 720px;
+      width: 100%;
+      max-height: none;
     }
     .live-badge {
       position: absolute;
@@ -274,6 +275,7 @@
     <div class="nav-divider"></div>
     <div class="role-badge">
       <span class="role-tag">환자</span>
+      <span class="dept-tag">고혈압 외래</span>
     </div>
   </div>
 </div>
