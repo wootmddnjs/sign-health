@@ -224,14 +224,32 @@
       border-radius: 8px; padding: 12px 14px;
     }
     .doctor-msg-label { font-size: 10px; font-weight: 600; color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
-    .doctor-msg-text { font-size: 22px; font-weight: 700; color: var(--accent); letter-spacing: -0.02em; }
+    .doctor-msg-text { font-size: 22px; font-weight: 700; color: var(--fg); letter-spacing: -0.02em; line-height: 1.6; }
+    /* Caption with Intention: 단어별 fade-in */
+    @keyframes wordIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes emphIn {
+      0%   { opacity: 0; transform: scale(0.7) translateY(8px); }
+      60%  { transform: scale(1.12) translateY(-2px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .doctor-msg-text .word {
+      display: inline-block;
+      opacity: 0;
+      animation: wordIn 0.3s ease forwards;
+    }
     .doctor-msg-text .emph {
-      font-size: 1.4em;
+      display: inline-block;
+      opacity: 0;
+      font-size: 1.45em;
       font-weight: 900;
-      color: #1e40af;
+      color: #1d4ed8;
       background: #dbeafe;
-      border-radius: 4px;
-      padding: 0 3px;
+      border-radius: 5px;
+      padding: 0 4px;
+      animation: emphIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;
     }
     .doctor-msg-time { font-size: 10px; color: #3b82f6; margin-top: 4px; font-variant-numeric: tabular-nums; }
 
@@ -446,13 +464,37 @@
     const tStr = t.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
     const sender = data.sender || '의료진';
     const msgEl = document.getElementById('doctorMsgText');
-    if (data.parts && data.parts.length > 0) {
-      msgEl.innerHTML = data.parts.map(p =>
-        p.emph ? `<span class="emph">${p.text}</span>` : p.text
-      ).join('');
-    } else {
-      msgEl.textContent = data.text;
+    // Caption with Intention: 단어별 순차 애니메이션
+    function renderCaption(parts) {
+      // parts가 없으면 plain text를 단어 단위로 분리
+      const tokens = [];
+      if (parts && parts.length > 0) {
+        parts.forEach(p => {
+          // 각 part를 띄어쓰기 기준으로 단어 분리
+          const words = p.text.split(/(\s+)/);
+          words.forEach(w => tokens.push({ text: w, emph: p.emph }));
+        });
+      } else {
+        data.text.split(/(\s+)/).forEach(w => tokens.push({ text: w, emph: false }));
+      }
+      let wordIdx = 0;
+      let html = '';
+      tokens.forEach(tok => {
+        if (/^\s+$/.test(tok.text)) {
+          html += tok.text; // 공백은 그냥 삽입
+        } else {
+          const delay = (wordIdx * 110).toFixed(0);
+          if (tok.emph) {
+            html += `<span class="emph" style="animation-delay:${delay}ms">${tok.text}</span>`;
+          } else {
+            html += `<span class="word" style="animation-delay:${delay}ms">${tok.text}</span>`;
+          }
+          wordIdx++;
+        }
+      });
+      msgEl.innerHTML = html;
     }
+    renderCaption(data.parts);
     document.getElementById('doctorMsgTime').textContent = `${sender} · ${tStr} 수신`;
 
     recvHistory.unshift({ text: data.text, time: tStr, sender });
