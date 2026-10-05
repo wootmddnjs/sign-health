@@ -395,6 +395,58 @@
       </div>
     </div>
 
+    <!-- Voice compose area -->
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div class="section-header">
+        <span class="section-title">음성 자막 전송</span>
+        <span class="section-sub">인식 후 수정 → 강조 → 전송</span>
+      </div>
+      <div class="voice-status" id="voiceStatus" style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;">
+        <div style="width:8px;height:8px;background:#dc2626;border-radius:50%;flex-shrink:0;"></div>
+        <div style="font-size:12px;color:var(--fg3);font-style:italic;" id="voiceTranscript">말씀해 주세요...</div>
+      </div>
+      <div style="position:relative;">
+        <div
+          id="voiceEditor"
+          contenteditable="true"
+          spellcheck="false"
+          style="
+            min-height:56px; padding:10px 12px;
+            border:1px solid var(--border); border-radius:8px;
+            font-size:15px; font-family:inherit; color:var(--fg);
+            background:var(--surface); outline:none; line-height:1.6;
+            cursor:text;
+          "
+          data-placeholder="음성 인식 결과가 여기에 표시됩니다. 직접 수정하거나 단어를 선택해 강조하세요."
+        ></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <button onclick="toggleVoice()" id="voiceBtn" style="
+          font-size:11px;font-weight:600;padding:4px 10px;border-radius:5px;cursor:pointer;
+          border:1px solid var(--accent);background:var(--accent-bg);color:var(--accent);font-family:inherit;
+          display:flex;align-items:center;gap:5px;
+        "><div style="width:7px;height:7px;background:var(--accent);border-radius:50%;"></div> 음성 인식</button>
+        <button onclick="emphasisSelected()" style="
+          font-size:11px;font-weight:600;padding:4px 10px;border-radius:5px;cursor:pointer;
+          border:1px solid #f59e0b;background:#fef3c7;color:#92400e;font-family:inherit;
+        ">선택 단어 강조</button>
+        <button onclick="clearEmphasis()" style="
+          font-size:11px;font-weight:500;padding:4px 10px;border-radius:5px;cursor:pointer;
+          border:1px solid var(--border);background:var(--surface);color:var(--fg3);font-family:inherit;
+        ">강조 해제</button>
+        <button onclick="clearEditor()" style="
+          font-size:11px;font-weight:500;padding:4px 10px;border-radius:5px;cursor:pointer;
+          border:1px solid var(--border);background:var(--surface);color:var(--fg3);font-family:inherit;
+        ">지우기</button>
+        <div style="flex:1;"></div>
+        <button onclick="sendVoiceMsg()" style="
+          font-size:13px;font-weight:700;padding:6px 18px;border-radius:6px;cursor:pointer;
+          border:none;background:var(--accent);color:white;font-family:inherit;
+        ">전송</button>
+      </div>
+      <div style="font-size:10px;color:var(--fg4);">단어를 드래그로 선택 후 '선택 단어 강조' 누르면 환자 화면에서 크게 표시됩니다</div>
+    </div>
+
     <!-- Tabs -->
     <div>
       <div class="section-header">
@@ -594,6 +646,99 @@
   document.querySelectorAll('[data-msg]').forEach(btn => {
     btn.addEventListener('click', () => send(btn.dataset.msg, btn.dataset.cat));
   });
+
+  // 음성 인식
+  let recognition = null;
+  let listening = false;
+
+  window.toggleVoice = function() {
+    const btn = document.getElementById('voiceBtn');
+    listening = !listening;
+    if (listening) {
+      btn.style.background = '#dc2626';
+      btn.style.borderColor = '#dc2626';
+      btn.style.color = 'white';
+      btn.innerHTML = '<div style="width:7px;height:7px;background:white;border-radius:50%;"></div> 인식 중지';
+      if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SR();
+        recognition.lang = 'ko-KR';
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.onresult = (e) => {
+          const transcript = Array.from(e.results).map(r => r[0].transcript).join('');
+          document.getElementById('voiceTranscript').textContent = transcript;
+          if (e.results[e.results.length - 1].isFinal) {
+            document.getElementById('voiceEditor').textContent = transcript;
+          }
+        };
+        recognition.start();
+      } else {
+        document.getElementById('voiceTranscript').textContent = '이 브라우저는 음성인식을 지원하지 않습니다';
+      }
+    } else {
+      btn.style.background = 'var(--accent-bg)';
+      btn.style.borderColor = 'var(--accent)';
+      btn.style.color = 'var(--accent)';
+      btn.innerHTML = '<div style="width:7px;height:7px;background:var(--accent);border-radius:50%;"></div> 음성 인식';
+      if (recognition) { recognition.stop(); recognition = null; }
+    }
+  };
+
+  // 선택 단어 강조
+  window.emphasisSelected = function() {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+    const range = sel.getRangeAt(0);
+    const editor = document.getElementById('voiceEditor');
+    if (!editor.contains(range.commonAncestorContainer)) return;
+    const span = document.createElement('span');
+    span.className = 'nurse-emph';
+    span.style.cssText = 'font-weight:900;font-size:1.25em;color:var(--accent);background:var(--accent-bg);border-radius:3px;padding:0 2px;';
+    try { range.surroundContents(span); } catch(e) {}
+    sel.removeAllRanges();
+  };
+
+  // 강조 해제
+  window.clearEmphasis = function() {
+    const editor = document.getElementById('voiceEditor');
+    editor.querySelectorAll('.nurse-emph').forEach(el => {
+      const parent = el.parentNode;
+      while (el.firstChild) parent.insertBefore(el.firstChild, el);
+      parent.removeChild(el);
+    });
+  };
+
+  // 편집기 초기화
+  window.clearEditor = function() {
+    document.getElementById('voiceEditor').innerHTML = '';
+    document.getElementById('voiceTranscript').textContent = '말씀해 주세요...';
+  };
+
+  // 음성 자막 전송
+  window.sendVoiceMsg = function() {
+    const editor = document.getElementById('voiceEditor');
+    if (!editor.textContent.trim()) return;
+    const parts = [];
+    editor.childNodes.forEach(node => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        if (node.textContent) parts.push({ text: node.textContent, emph: false });
+      } else if (node.nodeName === 'SPAN' && node.classList.contains('nurse-emph')) {
+        parts.push({ text: node.textContent, emph: true });
+      }
+    });
+    const plainText = parts.map(p => p.text).join('');
+    db.ref('doctor_message').set({
+      text: plainText,
+      parts: parts,
+      time: Date.now(),
+      sender: '간호사'
+    });
+    sentHistory.unshift({ text: plainText, cat: 'nurse', time: timeStr() });
+    renderSentLog();
+    editor.innerHTML = '';
+    document.getElementById('voiceTranscript').textContent = '말씀해 주세요...';
+  };
 
   // 시계
   function tick() {
