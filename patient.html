@@ -226,11 +226,13 @@
       font-size: 10px; color: var(--accent); font-weight: 500;
     }
     .gesture-row {
-      padding: 9px 14px;
+      padding: 7px 14px;
       border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; gap: 12px;
+      display: flex; align-items: center; gap: 10px;
+      transition: background 0.15s;
     }
     .gesture-row:last-child { border-bottom: none; }
+    .gesture-row.top1 { background: var(--accent-bg); }
     .gesture-status-dot {
       width: 6px; height: 6px; border-radius: 50%;
       background: var(--border); flex-shrink: 0;
@@ -241,7 +243,17 @@
       font-size: 13px; font-weight: 700; color: var(--fg);
       min-width: 52px; letter-spacing: -0.01em;
     }
-    .gesture-desc { font-size: 11px; color: var(--fg3); flex: 1; line-height: 1.4; }
+    .gesture-bar-wrap {
+      flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden;
+    }
+    .gesture-bar {
+      height: 100%; background: var(--accent); border-radius: 2px;
+      transition: width 0.15s ease;
+    }
+    .gesture-pct {
+      font-size: 10px; font-weight: 600; color: var(--fg3);
+      min-width: 32px; text-align: right; font-variant-numeric: tabular-nums;
+    }
     .gesture-hint { display: none; }
 
     /* Right: message panel */
@@ -405,49 +417,10 @@
     <!-- Gesture guide -->
     <div class="gesture-guide">
       <div class="gesture-guide-header">
-        <span class="gesture-guide-label">인식 가능한 수어</span>
-        <span class="gesture-guide-note">AI 모델 자동 인식 · 5초 쿨다운</span>
+        <span class="gesture-guide-label">수어 인식 순위</span>
+        <span class="gesture-guide-note">신뢰도 높은 순 · 실시간</span>
       </div>
-      <div class="gesture-row">
-        <div class="gesture-status-dot" id="dot-아프다"></div>
-        <span class="gesture-code">아프다</span>
-        <span class="gesture-hint">통증 호소</span>
-      </div>
-      <div class="gesture-row">
-        <div class="gesture-status-dot" id="dot-어지럽다"></div>
-        <span class="gesture-code">어지럽다</span>
-        <span class="gesture-hint">어지러움</span>
-      </div>
-      <div class="gesture-row">
-        <div class="gesture-status-dot" id="dot-두통"></div>
-        <span class="gesture-code">두통</span>
-        <span class="gesture-hint">머리 통증</span>
-      </div>
-      <div class="gesture-row">
-        <div class="gesture-status-dot" id="dot-약"></div>
-        <span class="gesture-code">약</span>
-        <span class="gesture-hint">약 복용</span>
-      </div>
-      <div class="gesture-row">
-        <div class="gesture-status-dot" id="dot-피곤"></div>
-        <span class="gesture-code">피곤</span>
-        <span class="gesture-hint">피로감</span>
-      </div>
-      <div class="gesture-row">
-        <div class="gesture-status-dot" id="dot-혈압"></div>
-        <span class="gesture-code">혈압</span>
-        <span class="gesture-hint">혈압 관련</span>
-      </div>
-      <div class="gesture-row">
-        <div class="gesture-status-dot" id="dot-걱정"></div>
-        <span class="gesture-code">걱정</span>
-        <span class="gesture-hint">불안·걱정</span>
-      </div>
-      <div class="gesture-row">
-        <div class="gesture-status-dot" id="dot-먹다"></div>
-        <span class="gesture-code">먹다</span>
-        <span class="gesture-hint">식사·복약</span>
-      </div>
+      <div id="gestureRankList"></div>
     </div>
 
   </div>
@@ -662,6 +635,27 @@
     }
   }
 
+  function updateRankList(predictions) {
+    const list = document.getElementById('gestureRankList');
+    if (!list) return;
+    // 없음 제외 후 신뢰도 내림차순 정렬
+    const sorted = predictions
+      .map(p => ({ name: cleanClassName(p.className), pct: p.probability }))
+      .filter(p => !IGNORE_CLASSES.has(p.name))
+      .sort((a, b) => b.pct - a.pct);
+
+    list.innerHTML = sorted.map((p, i) => {
+      const pctInt = Math.round(p.pct * 100);
+      const isTop = i === 0;
+      return `<div class="gesture-row${isTop ? ' top1' : ''}">
+        <div class="gesture-status-dot${isTop && pctInt >= 50 ? ' active' : ''}"></div>
+        <span class="gesture-code">${p.name}</span>
+        <div class="gesture-bar-wrap"><div class="gesture-bar" style="width:${pctInt}%"></div></div>
+        <span class="gesture-pct">${pctInt}%</span>
+      </div>`;
+    }).join('');
+  }
+
   function startCamera() {
     navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
       videoEl.srcObject = stream;
@@ -681,6 +675,9 @@
     const { pose, posenetOutput } = await tmModel.estimatePose(videoEl);
     const predictions = await tmModel.predict(posenetOutput);
 
+    // 실시간 순위 리스트 업데이트
+    updateRankList(predictions);
+
     // 가장 높은 confidence 클래스 찾기
     let best = predictions.reduce((a, b) => a.probability > b.probability ? a : b);
 
@@ -694,8 +691,6 @@
     if (best.probability >= CONFIDENCE_THRESHOLD && !IGNORE_CLASSES.has(bestClean)) {
       const gesture = bestClean;
 
-      clearAllDots();
-      setGestureDot(gesture, true);
       recogDot.className = 'recog-dot detecting';
       recogText.className = 'recog-text detecting';
       recogText.textContent = gesture;
@@ -721,7 +716,6 @@
         gestureBuffer = [];
       }
     } else {
-      clearAllDots();
       recogDot.className = 'recog-dot';
       recogText.className = 'recog-text';
       if (best.probability < CONFIDENCE_THRESHOLD || IGNORE_CLASSES.has(bestClean)) {
