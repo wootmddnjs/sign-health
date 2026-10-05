@@ -211,6 +211,13 @@
       border-radius: 8px;
       overflow: hidden;
       flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      max-height: 220px;
+    }
+    #gestureRankList {
+      overflow-y: auto;
+      flex: 1;
     }
     .gesture-guide-header {
       padding: 8px 14px;
@@ -642,7 +649,8 @@
     const sorted = predictions
       .map(p => ({ name: cleanClassName(p.className), pct: p.probability }))
       .filter(p => !IGNORE_CLASSES.has(p.name))
-      .sort((a, b) => b.pct - a.pct);
+      .sort((a, b) => b.pct - a.pct)
+      .slice(0, 5);
 
     list.innerHTML = sorted.map((p, i) => {
       const pctInt = Math.round(p.pct * 100);
