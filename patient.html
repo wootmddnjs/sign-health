@@ -224,32 +224,17 @@
       border-radius: 8px; padding: 12px 14px;
     }
     .doctor-msg-label { font-size: 10px; font-weight: 600; color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
-    .doctor-msg-text { font-size: 22px; font-weight: 700; color: var(--fg); letter-spacing: -0.02em; line-height: 1.6; }
-    /* Caption with Intention: 단어별 fade-in */
-    @keyframes wordIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes emphIn {
-      0%   { opacity: 0; transform: scale(0.7) translateY(8px); }
-      60%  { transform: scale(1.12) translateY(-2px); }
-      100% { opacity: 1; transform: scale(1) translateY(0); }
-    }
-    .doctor-msg-text .word {
-      display: inline-block;
-      opacity: 0;
-      animation: wordIn 0.3s ease forwards;
+    .doctor-msg-text {
+      font-size: 22px; font-weight: 600; color: #111827;
+      letter-spacing: -0.01em; line-height: 1.7;
     }
     .doctor-msg-text .emph {
-      display: inline-block;
-      opacity: 0;
-      font-size: 1.45em;
+      font-size: 1.36em;
       font-weight: 900;
       color: #1d4ed8;
       background: #dbeafe;
       border-radius: 5px;
-      padding: 0 4px;
-      animation: emphIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;
+      padding: 1px 5px;
     }
     .doctor-msg-time { font-size: 10px; color: #3b82f6; margin-top: 4px; font-variant-numeric: tabular-nums; }
 
@@ -477,19 +462,12 @@
       } else {
         data.text.split(/(\s+)/).forEach(w => tokens.push({ text: w, emph: false }));
       }
-      let wordIdx = 0;
       let html = '';
       tokens.forEach(tok => {
-        if (/^\s+$/.test(tok.text)) {
-          html += tok.text; // 공백은 그냥 삽입
+        if (tok.emph && !/^\s+$/.test(tok.text)) {
+          html += `<span class="emph">${tok.text}</span>`;
         } else {
-          const delay = (wordIdx * 110).toFixed(0);
-          if (tok.emph) {
-            html += `<span class="emph" style="animation-delay:${delay}ms">${tok.text}</span>`;
-          } else {
-            html += `<span class="word" style="animation-delay:${delay}ms">${tok.text}</span>`;
-          }
-          wordIdx++;
+          html += tok.text;
         }
       });
       msgEl.innerHTML = html;
