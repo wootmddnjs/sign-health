@@ -652,7 +652,7 @@
     if (!list) return;
     // 없음 제외 후 신뢰도 내림차순 정렬
     const sorted = predictions
-      .map(p => ({ name: cleanClassName(p.className), pct: p.probability }))
+      .map(p => ({ name: p.className, pct: p.probability }))
       .filter(p => !IGNORE_CLASSES.has(p.name))
       .sort((a, b) => b.pct - a.pct)
       .slice(0, 5);
@@ -693,24 +693,22 @@
     const { pose, posenetOutput } = poseResult;
     const posePreds = await tmPoseModel.predict(posenetOutput);
 
-    // 두 모델 결과 합산 (같은 클래스명이면 평균, 한쪽에만 있으면 그대로)
+    // 두 모델 결과 합산: 같은 클래스명이면 평균, 한쪽에만 있으면 그대로
     const scoreMap = {};
+    const countMap = {};
     for (const p of posePreds) {
       const name = cleanClassName(p.className);
       scoreMap[name] = (scoreMap[name] || 0) + p.probability;
+      countMap[name] = (countMap[name] || 0) + 1;
     }
     for (const p of imagePreds) {
       const name = cleanClassName(p.className);
       scoreMap[name] = (scoreMap[name] || 0) + p.probability;
-    }
-    // 클래스별 등장 횟수로 평균
-    const countMap = {};
-    for (const p of [...posePreds, ...imagePreds]) {
-      const name = cleanClassName(p.className);
       countMap[name] = (countMap[name] || 0) + 1;
     }
+    // className 그대로 유지 (updateRankList에서 cleanClassName 호출하므로)
     const predictions = Object.entries(scoreMap).map(([className, sum]) => ({
-      className,
+      className,  // 이미 clean된 이름
       probability: sum / countMap[className],
     }));
 
@@ -726,7 +724,7 @@
       setSilhouette(false);
     }
 
-    const bestClean = cleanClassName(best.className);
+    const bestClean = best.className; // 이미 clean된 이름
     if (best.probability >= CONFIDENCE_THRESHOLD && !IGNORE_CLASSES.has(bestClean)) {
       const gesture = bestClean;
 
