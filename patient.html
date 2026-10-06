@@ -478,6 +478,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-database-compat.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/pose@0.8/dist/teachablemachine-pose.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
 
 <script>
   const firebaseConfig = {
@@ -599,8 +600,9 @@
     return name.replace(/^[Cc]lass\s*\d+\s*/,'').trim();
   }
 
-  // Teachable Machine Pose 모델
-  const MODEL_URL = 'https://teachablemachine.withgoogle.com/models/VFnakb498/';
+  // Teachable Machine 모델 URL
+  const POSE_MODEL_URL  = 'https://teachablemachine.withgoogle.com/models/VFnakb498/';
+  const IMAGE_MODEL_URL = 'https://teachablemachine.withgoogle.com/models/4p5xhTeiR/';
   const CONFIDENCE_THRESHOLD = 0.80; // 80% 이상일 때만 인식
   const CONFIRM_FRAMES = 15;         // 연속 프레임 확인
   const COOLDOWN_MS = 5000;          // 전송 후 5초 쿨다운
@@ -608,7 +610,8 @@
   const IGNORE_CLASSES = new Set(['없음']);
 
   const videoEl = document.getElementById('camera');
-  let tmModel = null;
+  let tmPoseModel = null;
+  let tmImageModel = null;
   let gestureBuffer = [];
   let lastSentTime = 0;
 
@@ -632,9 +635,11 @@
     const recogText = document.getElementById('recogText');
     recogText.textContent = 'AI 모델 로딩 중...';
     try {
-      const modelURL = MODEL_URL + 'model.json';
-      const metadataURL = MODEL_URL + 'metadata.json';
-      tmModel = await tmPose.load(modelURL, metadataURL);
+      // 포즈 모델 + 이미지 모델 동시 로드
+      [tmPoseModel, tmImageModel] = await Promise.all([
+        tmPose.load(POSE_MODEL_URL + 'model.json', POSE_MODEL_URL + 'metadata.json'),
+        tmImage.load(IMAGE_MODEL_URL + 'model.json', IMAGE_MODEL_URL + 'metadata.json'),
+      ]);
       recogText.textContent = '인식 대기 중...';
       startCamera();
     } catch(e) {
@@ -675,13 +680,39 @@
   }
 
   async function loop() {
-    if (!tmModel) return;
+    if (!tmPoseModel || !tmImageModel) return;
     const recogDot = document.getElementById('recogDot');
     const recogText = document.getElementById('recogText');
     const recogProgress = document.getElementById('recogProgress');
 
-    const { pose, posenetOutput } = await tmModel.estimatePose(videoEl);
-    const predictions = await tmModel.predict(posenetOutput);
+    // 두 모델 동시 예측
+    const [poseResult, imagePreds] = await Promise.all([
+      tmPoseModel.estimatePose(videoEl),
+      tmImageModel.classify(videoEl),
+    ]);
+    const { pose, posenetOutput } = poseResult;
+    const posePreds = await tmPoseModel.predict(posenetOutput);
+
+    // 두 모델 결과 합산 (같은 클래스명이면 평균, 한쪽에만 있으면 그대로)
+    const scoreMap = {};
+    for (const p of posePreds) {
+      const name = cleanClassName(p.className);
+      scoreMap[name] = (scoreMap[name] || 0) + p.probability;
+    }
+    for (const p of imagePreds) {
+      const name = cleanClassName(p.className);
+      scoreMap[name] = (scoreMap[name] || 0) + p.probability;
+    }
+    // 클래스별 등장 횟수로 평균
+    const countMap = {};
+    for (const p of [...posePreds, ...imagePreds]) {
+      const name = cleanClassName(p.className);
+      countMap[name] = (countMap[name] || 0) + 1;
+    }
+    const predictions = Object.entries(scoreMap).map(([className, sum]) => ({
+      className,
+      probability: sum / countMap[className],
+    }));
 
     // 실시간 순위 리스트 업데이트
     updateRankList(predictions);
