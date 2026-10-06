@@ -603,6 +603,7 @@
   // Teachable Machine 모델 URL
   const POSE_MODEL_URL  = 'https://teachablemachine.withgoogle.com/models/VFnakb498/';
   const IMAGE_MODEL_URL = 'https://teachablemachine.withgoogle.com/models/4p5xhTeiR/';
+  const USE_IMAGE_MODEL = false; // 이미지 모델 사용 여부 (문제 시 false로)
   const CONFIDENCE_THRESHOLD = 0.80; // 80% 이상일 때만 인식
   const CONFIRM_FRAMES = 15;         // 연속 프레임 확인
   const COOLDOWN_MS = 5000;          // 전송 후 5초 쿨다운
@@ -635,11 +636,10 @@
     const recogText = document.getElementById('recogText');
     recogText.textContent = 'AI 모델 로딩 중...';
     try {
-      // 포즈 모델 + 이미지 모델 동시 로드
-      [tmPoseModel, tmImageModel] = await Promise.all([
-        tmPose.load(POSE_MODEL_URL + 'model.json', POSE_MODEL_URL + 'metadata.json'),
-        tmImage.load(IMAGE_MODEL_URL + 'model.json', IMAGE_MODEL_URL + 'metadata.json'),
-      ]);
+      tmPoseModel = await tmPose.load(POSE_MODEL_URL + 'model.json', POSE_MODEL_URL + 'metadata.json');
+      if (USE_IMAGE_MODEL) {
+        tmImageModel = await tmImage.load(IMAGE_MODEL_URL + 'model.json', IMAGE_MODEL_URL + 'metadata.json');
+      }
       recogText.textContent = '인식 대기 중...';
       startCamera();
     } catch(e) {
@@ -652,7 +652,7 @@
     if (!list) return;
     // 없음 제외 후 신뢰도 내림차순 정렬
     const sorted = predictions
-      .map(p => ({ name: p.className, pct: p.probability }))
+      .map(p => ({ name: cleanClassName(p.className), pct: p.probability }))
       .filter(p => !IGNORE_CLASSES.has(p.name))
       .sort((a, b) => b.pct - a.pct)
       .slice(0, 5);
@@ -680,37 +680,38 @@
   }
 
   async function loop() {
-    if (!tmPoseModel || !tmImageModel) return;
+    if (!tmPoseModel) return;
     const recogDot = document.getElementById('recogDot');
     const recogText = document.getElementById('recogText');
     const recogProgress = document.getElementById('recogProgress');
 
-    // 두 모델 동시 예측
-    const [poseResult, imagePreds] = await Promise.all([
-      tmPoseModel.estimatePose(videoEl),
-      tmImageModel.classify(videoEl),
-    ]);
-    const { pose, posenetOutput } = poseResult;
+    const { pose, posenetOutput } = await tmPoseModel.estimatePose(videoEl);
     const posePreds = await tmPoseModel.predict(posenetOutput);
 
-    // 두 모델 결과 합산: 같은 클래스명이면 평균, 한쪽에만 있으면 그대로
-    const scoreMap = {};
-    const countMap = {};
-    for (const p of posePreds) {
-      const name = cleanClassName(p.className);
-      scoreMap[name] = (scoreMap[name] || 0) + p.probability;
-      countMap[name] = (countMap[name] || 0) + 1;
+    let predictions;
+    if (USE_IMAGE_MODEL && tmImageModel) {
+      // 두 모델 결과 합산
+      const imagePreds = await tmImageModel.classify(videoEl);
+      const scoreMap = {};
+      const countMap = {};
+      for (const p of posePreds) {
+        const name = cleanClassName(p.className);
+        scoreMap[name] = (scoreMap[name] || 0) + p.probability;
+        countMap[name] = (countMap[name] || 0) + 1;
+      }
+      for (const p of imagePreds) {
+        const name = cleanClassName(p.className);
+        scoreMap[name] = (scoreMap[name] || 0) + p.probability;
+        countMap[name] = (countMap[name] || 0) + 1;
+      }
+      predictions = Object.entries(scoreMap).map(([className, sum]) => ({
+        className,
+        probability: sum / countMap[className],
+      }));
+    } else {
+      // 포즈 모델만 사용 (원래 방식)
+      predictions = posePreds;
     }
-    for (const p of imagePreds) {
-      const name = cleanClassName(p.className);
-      scoreMap[name] = (scoreMap[name] || 0) + p.probability;
-      countMap[name] = (countMap[name] || 0) + 1;
-    }
-    // className 그대로 유지 (updateRankList에서 cleanClassName 호출하므로)
-    const predictions = Object.entries(scoreMap).map(([className, sum]) => ({
-      className,  // 이미 clean된 이름
-      probability: sum / countMap[className],
-    }));
 
     // 실시간 순위 리스트 업데이트
     updateRankList(predictions);
@@ -724,7 +725,7 @@
       setSilhouette(false);
     }
 
-    const bestClean = best.className; // 이미 clean된 이름
+    const bestClean = USE_IMAGE_MODEL ? best.className : cleanClassName(best.className);
     if (best.probability >= CONFIDENCE_THRESHOLD && !IGNORE_CLASSES.has(bestClean)) {
       const gesture = bestClean;
 
