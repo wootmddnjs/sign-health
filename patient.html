@@ -363,6 +363,7 @@
       <div class="camera-wrap">
         <div class="live-badge">LIVE</div>
         <video id="camera" autoplay playsinline muted></video>
+        <canvas id="tmCanvas" width="224" height="224" style="display:none;"></canvas>
         <svg class="camera-svg" viewBox="0 0 320 240" preserveAspectRatio="xMidYMid meet">
           <ellipse id="silhouette-head" cx="160" cy="60" rx="35" ry="42"
             fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-dasharray="6,4"/>
@@ -677,7 +678,12 @@
     const recogText = document.getElementById('recogText');
     const recogProgress = document.getElementById('recogProgress');
 
-    const predsB = await tmModelB.predict(videoEl);
+    // video를 224x224 canvas에 그려서 모델에 전달
+    const canvas = document.getElementById('tmCanvas');
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(videoEl, 0, 0, 224, 224);
+
+    const predsB = await tmModelB.predict(canvas);
     const predictions = predsB;
 
     // 실시간 순위 리스트 업데이트
