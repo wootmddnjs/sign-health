@@ -684,8 +684,8 @@
 
     // 두 이미지 모델 동시 예측
     const [predsA, predsB] = await Promise.all([
-      tmModelA.classify(videoEl),
-      tmModelB.classify(videoEl),
+      tmModelA.predict(videoEl),
+      tmModelB.predict(videoEl),
     ]);
 
     // 두 모델 결과 합산 후 평균
