@@ -599,8 +599,7 @@
     return name.replace(/^[Cc]lass\s*\d+\s*/,'').trim();
   }
 
-  // Teachable Machine 이미지 모델 URL (두 개 모두 이미지 모델)
-  const MODEL_URL_A = 'https://teachablemachine.withgoogle.com/models/VFnakb498/';
+  // Teachable Machine 이미지 모델 URL
   const MODEL_URL_B = 'https://teachablemachine.withgoogle.com/models/4p5xhTeiR/';
   const CONFIDENCE_THRESHOLD = 0.75; // 75% 이상일 때만 인식
   const CONFIRM_FRAMES = 15;
@@ -608,7 +607,6 @@
   const IGNORE_CLASSES = new Set(['없음']);
 
   const videoEl = document.getElementById('camera');
-  let tmModelA = null;
   let tmModelB = null;
   let gestureBuffer = [];
   let lastSentTime = 0;
@@ -633,10 +631,7 @@
     const recogText = document.getElementById('recogText');
     recogText.textContent = 'AI 모델 로딩 중...';
     try {
-      [tmModelA, tmModelB] = await Promise.all([
-        tmImage.load(MODEL_URL_A + 'model.json', MODEL_URL_A + 'metadata.json'),
-        tmImage.load(MODEL_URL_B + 'model.json', MODEL_URL_B + 'metadata.json'),
-      ]);
+      tmModelB = await tmImage.load(MODEL_URL_B + 'model.json', MODEL_URL_B + 'metadata.json');
       recogText.textContent = '인식 대기 중...';
       startCamera();
     } catch(e) {
@@ -677,29 +672,13 @@
   }
 
   async function loop() {
-    if (!tmModelA || !tmModelB) return;
+    if (!tmModelB) return;
     const recogDot = document.getElementById('recogDot');
     const recogText = document.getElementById('recogText');
     const recogProgress = document.getElementById('recogProgress');
 
-    // 두 이미지 모델 동시 예측
-    const [predsA, predsB] = await Promise.all([
-      tmModelA.predict(videoEl),
-      tmModelB.predict(videoEl),
-    ]);
-
-    // 두 모델 결과 합산 후 평균
-    const scoreMap = {};
-    const countMap = {};
-    for (const p of [...predsA, ...predsB]) {
-      const name = cleanClassName(p.className);
-      scoreMap[name] = (scoreMap[name] || 0) + p.probability;
-      countMap[name] = (countMap[name] || 0) + 1;
-    }
-    const predictions = Object.entries(scoreMap).map(([className, sum]) => ({
-      className,
-      probability: sum / countMap[className],
-    }));
+    const predsB = await tmModelB.predict(videoEl);
+    const predictions = predsB;
 
     // 실시간 순위 리스트 업데이트
     updateRankList(predictions);
